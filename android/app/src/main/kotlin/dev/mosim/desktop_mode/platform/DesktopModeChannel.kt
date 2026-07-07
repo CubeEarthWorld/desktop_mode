@@ -55,8 +55,8 @@ class DesktopModeChannel(
                     result.success(null)
                 }
 
-                "rightClick" -> {
-                    controller.rightClick()
+                "longPress" -> {
+                    controller.longPress()
                     result.success(null)
                 }
 
@@ -88,11 +88,9 @@ class DesktopModeChannel(
                 }
 
                 "twoFingerMoveBy" -> {
-                    val aDx = (call.argument<Number>("aDx") ?: 0).toFloat()
-                    val aDy = (call.argument<Number>("aDy") ?: 0).toFloat()
-                    val bDx = (call.argument<Number>("bDx") ?: 0).toFloat()
-                    val bDy = (call.argument<Number>("bDy") ?: 0).toFloat()
-                    controller.twoFingerMoveBy(aDx, aDy, bDx, bDy)
+                    val dx = (call.argument<Number>("dx") ?: 0).toFloat()
+                    val dy = (call.argument<Number>("dy") ?: 0).toFloat()
+                    controller.twoFingerMoveBy(dx, dy)
                     result.success(null)
                 }
 

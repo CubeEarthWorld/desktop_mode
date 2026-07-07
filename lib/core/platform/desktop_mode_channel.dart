@@ -74,7 +74,7 @@ class DesktopModeChannel implements DesktopModeApi {
   Future<void> leftClick() => _method.invokeMethod('leftClick');
 
   @override
-  Future<void> rightClick() => _method.invokeMethod('rightClick');
+  Future<void> longPress() => _method.invokeMethod('longPress');
 
   @override
   Future<void> showTouchEffectAtCursor() =>
@@ -94,13 +94,8 @@ class DesktopModeChannel implements DesktopModeApi {
   Future<void> twoFingerMoveStart() => _method.invokeMethod('twoFingerMoveStart');
 
   @override
-  Future<void> twoFingerMoveBy(double aDx, double aDy, double bDx, double bDy) =>
-      _method.invokeMethod('twoFingerMoveBy', {
-        'aDx': aDx,
-        'aDy': aDy,
-        'bDx': bDx,
-        'bDy': bDy,
-      });
+  Future<void> twoFingerMoveBy(double dx, double dy) =>
+      _method.invokeMethod('twoFingerMoveBy', {'dx': dx, 'dy': dy});
 
   @override
   Future<void> twoFingerMoveEnd() => _method.invokeMethod('twoFingerMoveEnd');

@@ -47,14 +47,14 @@ void main() {
       expect(moveResult, isEmpty);
     });
 
-    test('two-finger tap within window emits RightClickResult', () {
+    test('two-finger tap within window emits nothing (right-click removed)', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
       final firstUp = recognizer.onPointerUp(1, const Duration(milliseconds: 150));
       final secondUp = recognizer.onPointerUp(2, const Duration(milliseconds: 150));
 
-      // 2本指を置いて離す動作は、1本目が離れた時点でジェスチャー終了とみなす。
-      expect(firstUp, [isA<RightClickResult>(), isA<TwoFingerMoveEndResult>()]);
+      // 2本指タップは何も送らない(右クリックは廃止)。
+      expect(firstUp, isEmpty);
       expect(secondUp, isEmpty);
     });
 
@@ -63,16 +63,6 @@ void main() {
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 200));
       recognizer.onPointerUp(1, const Duration(milliseconds: 250));
       final finalUp = recognizer.onPointerUp(2, const Duration(milliseconds: 250));
-
-      expect(finalUp, isEmpty);
-    });
-
-    test('movement during two-finger tracking goes dead (no scroll in v1)', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-      recognizer.onPointerMove(2, const Offset(90, 50), const Duration(milliseconds: 60));
-      recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-      final finalUp = recognizer.onPointerUp(2, const Duration(milliseconds: 100));
 
       expect(finalUp, isEmpty);
     });
@@ -107,6 +97,39 @@ void main() {
       recognizer.onPointerDown(2, const Offset(0, 0), const Duration(milliseconds: 200));
       final result = recognizer.onPointerUp(2, const Duration(milliseconds: 250));
 
+      expect(result, [isA<LeftClickResult>()]);
+    });
+
+    test('pointer cancel during drag emits DragEndResult so native state is released', () {
+      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
+      recognizer.onLongPressTimeout(1);
+      recognizer.onPointerMove(1, const Offset(30, 0), const Duration(milliseconds: 600));
+
+      final cancelResult = recognizer.onPointerCancel(1);
+
+      expect(cancelResult, [isA<DragEndResult>()]);
+
+      // キャンセル後は正常に idle へ戻り、次のタップが通常通り効く。
+      recognizer.onPointerDown(2, const Offset(0, 0), const Duration(milliseconds: 700));
+      final result = recognizer.onPointerUp(2, const Duration(milliseconds: 750));
+      expect(result, [isA<LeftClickResult>()]);
+    });
+
+    test('pointer cancel during two-finger swipe emits TwoFingerSwipeEndResult', () {
+      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+      recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
+
+      final cancelResult = recognizer.onPointerCancel(1);
+      expect(cancelResult, [isA<TwoFingerSwipeEndResult>()]);
+
+      // 残った指がキャンセルされても、既に dead 状態なので何も送らない。
+      final secondCancel = recognizer.onPointerCancel(2);
+      expect(secondCancel, isEmpty);
+
+      // 次のタップは通常通り効く。
+      recognizer.onPointerDown(3, const Offset(0, 0), const Duration(milliseconds: 200));
+      final result = recognizer.onPointerUp(3, const Duration(milliseconds: 250));
       expect(result, [isA<LeftClickResult>()]);
     });
 
@@ -150,13 +173,13 @@ void main() {
       expect(moveResult, [isA<CursorMoveResult>()]);
     });
 
-    test('long press timeout without moving then release emits RightClickResult', () {
+    test('long press timeout without moving then release emits LongPressResult', () {
       recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
       final timeoutResult = recognizer.onLongPressTimeout(1);
       final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 600));
 
       expect(timeoutResult, isEmpty);
-      expect(upResult, [isA<RightClickResult>()]);
+      expect(upResult, [isA<LongPressResult>()]);
     });
 
     test('long press timeout then move starts a drag directly (no re-touch needed)', () {
@@ -226,30 +249,31 @@ void main() {
       expect(upResult, [isA<LeftClickResult>()]);
     });
 
-    test('two fingers moving together emit TwoFingerMoveStart then per-finger moves', () {
+    test('two fingers moving together emit TwoFingerSwipeStart then half-delta moves', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
 
       final moveA = recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
-      expect(moveA, [isA<TwoFingerMoveStartResult>(), isA<TwoFingerMoveResult>()]);
-      final firstMove = moveA[1] as TwoFingerMoveResult;
-      expect(firstMove.isPrimary, isTrue);
-      expect(firstMove.dy, 30);
+      expect(moveA, [isA<TwoFingerSwipeStartResult>(), isA<TwoFingerSwipeMoveResult>()]);
+      final firstMove = moveA[1] as TwoFingerSwipeMoveResult;
+      // 重心(2点平均)の移動量として、実際の移動量の半分を返す。
+      expect(firstMove.dy, 15);
 
       final moveB = recognizer.onPointerMove(2, const Offset(50, 80), const Duration(milliseconds: 90));
-      expect(moveB, [isA<TwoFingerMoveResult>()]);
-      final secondMove = moveB.single as TwoFingerMoveResult;
-      expect(secondMove.isPrimary, isFalse);
-      expect(secondMove.dy, 30);
+      expect(moveB, [isA<TwoFingerSwipeMoveResult>()]);
+      final secondMove = moveB.single as TwoFingerSwipeMoveResult;
+      expect(secondMove.dy, 15);
+      // 2指分を合算すると実際に動いた量(30+30)と一致する。
+      expect(firstMove.dy + secondMove.dy, 30);
     });
 
-    test('lifting one finger during two-finger move ends the gesture and ignores the rest', () {
+    test('lifting one finger during two-finger swipe ends the gesture and ignores the rest', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
       recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
 
       final endResult = recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-      expect(endResult, [isA<TwoFingerMoveEndResult>()]);
+      expect(endResult, [isA<TwoFingerSwipeEndResult>()]);
 
       // 残った指の動きは無視される(誤ってカーソル移動やタップにならない)。
       final ignoredMove = recognizer.onPointerMove(
@@ -262,13 +286,13 @@ void main() {
       expect(ignoredUp, isEmpty);
     });
 
-    test('two-finger tap without movement emits RightClickResult and end', () {
+    test('two-finger tap without movement emits nothing but ends cleanly', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
       final firstUp = recognizer.onPointerUp(1, const Duration(milliseconds: 150));
       final secondUp = recognizer.onPointerUp(2, const Duration(milliseconds: 150));
 
-      expect(firstUp, [isA<RightClickResult>(), isA<TwoFingerMoveEndResult>()]);
+      expect(firstUp, isEmpty);
       expect(secondUp, isEmpty);
     });
   });

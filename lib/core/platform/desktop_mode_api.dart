@@ -17,18 +17,21 @@ abstract interface class DesktopModeApi {
   Future<void> stopSession();
   Future<void> moveCursor(double dx, double dy);
   Future<void> leftClick();
-  Future<void> rightClick();
+
+  /// 指を動かさずに長押しして離した場合の長押し操作(Android のマウスに
+  /// 右クリックが無いため、右クリックの代替として現在カーソル位置に長押しタップを送る)。
+  Future<void> longPress();
   Future<void> showTouchEffectAtCursor();
   Future<void> pointerDown();
   Future<void> pointerMove(double dx, double dy);
   Future<void> pointerUp();
 
-  /// 2本指ジェスチャの開始。スクロール/ピンチの区別はネイティブ側でも行わず、
-  /// 外部ディスプレイのアプリに生の2点タッチとして転送する。
+  /// 2本指スワイプの開始。常に2点を同じ量だけ動かして転送するため、
+  /// 外部ディスプレイ側でピンチと解釈されることはない(常にスワイプ/スクロール)。
   Future<void> twoFingerMoveStart();
 
-  /// 1本目([aDx],[aDy])と2本目([bDx],[bDy])の今フレーム分のデルタ。
-  Future<void> twoFingerMoveBy(double aDx, double aDy, double bDx, double bDy);
+  /// 2本指スワイプの今フレーム分のデルタ(2点とも同じ量だけ動かす)。
+  Future<void> twoFingerMoveBy(double dx, double dy);
   Future<void> twoFingerMoveEnd();
 
   Future<bool> systemAction(String action);

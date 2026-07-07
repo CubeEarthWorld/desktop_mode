@@ -76,10 +76,8 @@ class TouchpadController extends Notifier<TouchpadState> {
   double _pendingDy = 0;
   double _pendingDragDx = 0;
   double _pendingDragDy = 0;
-  double _pendingTwoFingerADx = 0;
-  double _pendingTwoFingerADy = 0;
-  double _pendingTwoFingerBDx = 0;
-  double _pendingTwoFingerBDy = 0;
+  double _pendingSwipeDx = 0;
+  double _pendingSwipeDy = 0;
   bool _frameScheduled = false;
   int _nextGlowId = 0;
 
@@ -158,7 +156,10 @@ class TouchpadController extends Notifier<TouchpadState> {
     _longPressTimer?.cancel();
     final touches = Map<int, Offset>.from(state.activeTouches)..remove(id);
     state = state.copyWith(activeTouches: touches);
-    _recognizer.onPointerCancel(id);
+    // システムが途中でジェスチャーを打ち切った場合でも、ドラッグ/2本指スワイプ中で
+    // あれば必ずネイティブ側へ終了を伝える(結果を握り潰すと native の直列化ガードが
+    // 解放されず、以後のあらゆる操作が busy になる不具合の原因になる)。
+    _applyResults(_recognizer.onPointerCancel(id));
   }
 
   /// 指を動かさずに [AppSettings.longPressDurationMs] だけ静止し続けたら
@@ -192,20 +193,15 @@ class TouchpadController extends Notifier<TouchpadState> {
           _fireAndForget('pointerUp', api.pointerUp);
         case LeftClickResult():
           _fireAndForget('leftClick', api.leftClick);
-        case RightClickResult():
-          _fireAndForget('rightClick', api.rightClick);
-        case TwoFingerMoveStartResult():
+        case LongPressResult():
+          _fireAndForget('longPress', api.longPress);
+        case TwoFingerSwipeStartResult():
           _fireAndForget('twoFingerMoveStart', api.twoFingerMoveStart);
-        case TwoFingerMoveResult(:final isPrimary, :final dx, :final dy):
-          if (isPrimary) {
-            _pendingTwoFingerADx += dx;
-            _pendingTwoFingerADy += dy;
-          } else {
-            _pendingTwoFingerBDx += dx;
-            _pendingTwoFingerBDy += dy;
-          }
+        case TwoFingerSwipeMoveResult(:final dx, :final dy):
+          _pendingSwipeDx += dx;
+          _pendingSwipeDy += dy;
           _scheduleFlush();
-        case TwoFingerMoveEndResult():
+        case TwoFingerSwipeEndResult():
           _fireAndForget('twoFingerMoveEnd', api.twoFingerMoveEnd);
       }
     }
@@ -220,18 +216,14 @@ class TouchpadController extends Notifier<TouchpadState> {
       final dy = _pendingDy;
       final dragDx = _pendingDragDx;
       final dragDy = _pendingDragDy;
-      final aDx = _pendingTwoFingerADx;
-      final aDy = _pendingTwoFingerADy;
-      final bDx = _pendingTwoFingerBDx;
-      final bDy = _pendingTwoFingerBDy;
+      final swipeDx = _pendingSwipeDx;
+      final swipeDy = _pendingSwipeDy;
       _pendingDx = 0;
       _pendingDy = 0;
       _pendingDragDx = 0;
       _pendingDragDy = 0;
-      _pendingTwoFingerADx = 0;
-      _pendingTwoFingerADy = 0;
-      _pendingTwoFingerBDx = 0;
-      _pendingTwoFingerBDy = 0;
+      _pendingSwipeDx = 0;
+      _pendingSwipeDy = 0;
 
       final api = ref.read(desktopModeApiProvider);
       if (dx != 0 || dy != 0) {
@@ -240,8 +232,8 @@ class TouchpadController extends Notifier<TouchpadState> {
       if (dragDx != 0 || dragDy != 0) {
         _fireAndForget('pointerMove', () => api.pointerMove(dragDx, dragDy));
       }
-      if (aDx != 0 || aDy != 0 || bDx != 0 || bDy != 0) {
-        _fireAndForget('twoFingerMoveBy', () => api.twoFingerMoveBy(aDx, aDy, bDx, bDy));
+      if (swipeDx != 0 || swipeDy != 0) {
+        _fireAndForget('twoFingerMoveBy', () => api.twoFingerMoveBy(swipeDx, swipeDy));
       }
     });
   }

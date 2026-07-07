@@ -1,4 +1,4 @@
-# Android 16 Desktop Touchpad — 改訂仕様書 v1.2
+# Android 16 Desktop Touchpad — 改訂仕様書 v1.3
 
 Android 16 以上の端末を、外部ディスプレイ上の desktop windowing 環境を操作する
 タッチパッドに変えるFlutterアプリ。個人利用の実用PoC。
@@ -6,6 +6,83 @@ Android 16 以上の端末を、外部ディスプレイ上の desktop windowing
 **コンセプト(不変):** 外部ディスプレイはアプリの画面(面)として使い、
 本体(スマホ)側は外部ディスプレイを操作するためのタッチパッドとして使う。
 画面複製(ミラーリング)ではない。
+
+---
+
+## -1. v1.3 での変更点
+
+### 調査: Android 標準の「マウスカーソル」への移行は可能か
+
+実機で「タップが busy のまま固まって操作不能になる」不具合が発生したことを受け、
+「`dispatchGesture` によるタッチジェスチャ注入をやめ、Android 標準のマウスカーソル
+(`SOURCE_MOUSE` の実イベント。システム標準の矢印カーソル・ホバー等)として
+実装し直せば、OS 標準機能に委譲できてシンプルになるのでは」という案を検討した。
+
+**結論: 不可能。現行方式(`AccessibilityService.dispatchGesture` によるタッチ
+ジェスチャ注入 + 自前描画のカーソル overlay)が、本アプリの権限モデル
+(root化なし・システムアプリ化なし・サイドロード配布)で実現できる事実上唯一かつ
+最善の手段であり、変更しない。**
+
+理由:
+- 本物の `SOURCE_MOUSE` イベントを外部ディスプレイへ注入できる公開 API は
+  `InputManager.injectInputEvent`(`android.permission.INJECT_EVENTS`、署名権限。
+  一般アプリには付与不可)と `VirtualDeviceManager` の `VirtualMouse`
+  (`android.permission.CREATE_VIRTUAL_DEVICE`、署名/特権アプリ限定)の2つのみ。
+  どちらも root 化・システムアプリ化なしのサイドロードアプリからは取得できない
+- `VirtualDeviceManager` はそもそも**自前で作成した仮想ディスプレイ**に対して
+  しか仮想入力デバイスを紐付けられない設計であり、本アプリが対象とする
+  「物理的に接続済みの外部ディスプレイ(HDMI/ワイヤレスディスプレイ等の
+  `Display`)」には最初から適用できない
+- 結果として、`AccessibilityService.dispatchGesture`(タッチジェスチャ注入)が
+  非特権アプリから他ディスプレイへ入力を送る唯一の公式手段であり続ける。
+  本アプリは既にこれを使い、自前のカーソル overlay を描画することで
+  「マウスカーソルのような見た目」を実現済みであり、これが実質的な代替である
+
+### ジェスチャ操作の簡略化(ユーザー要望に基づく)
+
+Android のマウスカーソルに右クリック・ピンチという概念が無いことに合わせ、
+操作を以下のように簡略化した(§6・§7.1 更新):
+
+| # | 変更 |
+|---|------|
+| G1 | **右クリックを廃止** し、代わりに「長押し(動かさずに保持して離す)」操作を新設。ネイティブ側の実装(その場での長押しタップ送出)自体は従来の「右クリック」実装を流用し、意味づけだけを変更した |
+| G2 | **2本指タップ(右クリック相当)を廃止。** 2本指を置いてすぐ離しても何も送らない |
+| G3 | **2本指ジェスチャーは常にスワイプ(ピンチ不可)。** 従来は2本指それぞれの生の移動を独立に外部ディスプレイへ転送しており、先方アプリの解釈次第でピンチにもなり得た。新方式では2本指の**重心の移動量**だけを計算し、仮想的な2点を**常に同じ量**だけ動かして転送する。2点の間隔が変化しないため、外部ディスプレイ側でピンチと解釈されることがなくなった |
+| G4 | **クリック判定を明文化:** 「動かさずに素早く指を離した場合」のみクリック(既存の `tapMaxDurationMs` 判定を維持、意味づけを明確化しただけ) |
+
+### バグ修正: 2本指/ドラッグ操作後にタップ等すべての操作が不能になる不具合
+
+実機で「2本指操作やドラッグの後、タップを含むあらゆる操作が `gesture_busy` で
+拒否され続ける」「もう一度同じ種類の2本指操作をやり直すと直る」不具合が
+報告された。
+
+**根本原因:** `TouchpadController.handlePointerCancel`(Dart)が
+`TouchpadGestureRecognizer.onPointerCancel` の戻り値を無視していた。
+Android がドラッグ/2本指スワイプの途中で `ACTION_CANCEL` を配送した場合
+(実機では2本指ジェスチャー中に発生しやすい)、Dart 側の状態は idle に
+戻る一方で、ネイティブ側 `GestureInjector` へは `pointerUp`/`twoFingerMoveEnd`
+が一度も呼ばれず、直列化ガード(`active`)が `Drag`/`TwoFinger` のまま
+永久に固着していた。この状態では以後のあらゆる新規ジェスチャーが
+`busy` として拒否される。
+
+「もう一度同じ種類の操作をすると直る」現象は、`GestureInjector.pointerUp`/
+`twoFingerEnd` が呼び出し元の識別ではなく**型(`is Drag`/`is TwoFinger`)だけ**で
+一致判定していたため、次の(本来は無関係な)同種ジェスチャーの終了呼び出しが
+古い固着状態をたまたま解放してしまうことで偶然「直った」ように見えていたに
+過ぎない(その意味で、次の新規ジェスチャー自体は無効化されて失われている)。
+
+**修正:** `TouchpadGestureRecognizer.onPointerCancel` の戻り値を
+`List<TouchpadGestureResult>` に変更し、ドラッグ中/2本指スワイプ中の
+キャンセルではそれぞれ `DragEndResult`/`TwoFingerSwipeEndResult` を返すように
+した(`onPointerUp` と対称)。`TouchpadController.handlePointerCancel` は
+この結果を必ず `_applyResults` で処理し、ネイティブ側の `pointerUp`/
+`twoFingerMoveEnd` を確実に呼ぶ。これにより `GestureInjector.active` が
+本来のタイミングで解放されるようになり、固着自体が発生しなくなる。
+
+### Platform Channel の変更
+- `rightClick` → `longPress` にリネーム(意味づけの変更に合わせる)
+- `twoFingerMoveBy` の引数を `{aDx, aDy, bDx, bDy}`(2点独立)から
+  `{dx, dy}`(2点共通、G3 の不変条件を担保)に変更
 
 ---
 
@@ -180,7 +257,7 @@ data class Diagnostics(
 | `stopSession` | — | — | |
 | `moveCursor` | `{dx, dy}`(物理px、フレーム集約済み) | — | native が pointerSpeed を掛けて反映 |
 | `leftClick` | — | — | 現在カーソル位置に 50ms tap |
-| `rightClick` | — | — | 現在カーソル位置に longPressDurationMs の長押し |
+| `longPress` | — | — | 現在カーソル位置に longPressDurationMs の長押し(右クリック相当) |
 | `systemAction` | `{action: "back"\|"home"\|"recents"}` | `bool` | performGlobalAction の結果 |
 | `updateConfig` | `{pointerSpeed, longPressDurationMs, showCursor}` | — | **R1: 新規追加** |
 | `getDiagnostics` | — | `Map` | **R9: 新規追加** |
@@ -193,21 +270,37 @@ data class Diagnostics(
 
 ## 6. ジェスチャ認識ステートマシン(Flutter 側・純 Dart)
 
-定数: `tapMaxDurationMs=220` / `tapSlop=12 logical px` / `twoFingerWindowMs=150`
+定数: `tapMaxDurationMs=220` / `tapSlop=12 logical px` / `twoFingerWindowMs=150` /
+`longPressDurationMs`(設定値、既定 550ms。静止長押し→ドラッグ武装の閾値)
 
 ```
 idle
- └ 1本目 down ────────────────→ singleTracking(downTime, downPos)
-singleTracking
+ └ 1本目 down ────────────────→ single(downTime, downPos)
+single
  ├ move: 累積移動 > tapSlop → moved=true。以後デルタを moveCursor へ(フレーム集約)
  ├ up:   !moved && 経過 < 220ms → leftClick → idle / それ以外 → idle
- └ 2本目 down: 1本目から150ms以内 && !moved → twoFingerTracking
+ ├ 静止したまま longPressDurationMs 経過 → longPressArmed
+ └ 2本目 down: 1本目から150ms以内 && !moved → twoFinger
               それ以外 → dead
-twoFingerTracking
- ├ いずれかの指の移動 > tapSlop → dead
- └ 全指 up: 両指とも保持 < 400ms → rightClick → idle / それ以外 → idle
+longPressArmed(静止長押し武装)
+ ├ move(slop 判定なし、即座に) → dragging へ(DragStartResult + DragMoveResult)
+ └ up(未移動) → longPress → idle
+dragging
+ ├ move → DragMoveResult
+ └ up → DragEndResult → idle
+twoFinger
+ ├ いずれかの指の移動 > tapSlop → twoFingerMoving(TwoFingerSwipeStartResult)
+ └ 全指 up(未移動) → 何も送らず idle(右クリックは廃止)
+twoFingerMoving(常にスワイプ。ピンチ相当の判定は行わない)
+ ├ move → 2点の重心移動量を TwoFingerSwipeMoveResult として送出
+ └ いずれかの指 up → TwoFingerSwipeEndResult → idle/dead
 dead(誤動作防止: カーソル移動もクリックも送らない)
  └ 全指 up → idle
+
+cancel(システムによる ACTION_CANCEL): dragging/twoFinger(Moving) 中であれば
+ up と同じ終了結果(DragEndResult/TwoFingerSwipeEndResult)を必ず返す。
+ これを怠ると native 側の直列化ガードが解放されず、以後 busy に固着する
+ (v1.3 で修正した実機不具合の根本原因、§-1 参照)
 ```
 
 - **デルタ集約(R2):** move 中の `delta * devicePixelRatio` を controller 内で加算し、
@@ -220,7 +313,8 @@ dead(誤動作防止: カーソル移動もクリックも送らない)
 ### 7.1 ジェスチャ注入(GestureInjector)
 - 左クリック: `GestureDescription.Builder().setDisplayId(targetId)` +
   `StrokeDescription(path(cursorX, cursorY), 0, 50)` → `dispatchGesture`
-- 右クリック相当: 同座標 `StrokeDescription(0, longPressDurationMs)`
+- 長押し(右クリック相当): 同座標 `StrokeDescription(0, longPressDurationMs)`
+- 2本指スワイプ: 仮想2点を常に同じデルタで動かす(間隔不変・ピンチ不可、§-1 G3)
 - **直列化ガード(R7):** 注入中フラグが立っている間の新規要求は破棄し
   `lastGestureResult = "busy"` を記録(カーソル移動は影響を受けない)
 - 完了/キャンセルは `GestureResultCallback` で受け、`lastGestureResult` 更新。

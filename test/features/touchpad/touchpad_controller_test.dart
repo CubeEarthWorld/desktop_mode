@@ -38,7 +38,7 @@ class _FakeDesktopModeApi implements DesktopModeApi {
   Future<void> leftClick() async {}
 
   @override
-  Future<void> rightClick() async {}
+  Future<void> longPress() async {}
 
   @override
   Future<void> showTouchEffectAtCursor() async {}
@@ -56,7 +56,7 @@ class _FakeDesktopModeApi implements DesktopModeApi {
   Future<void> twoFingerMoveStart() async {}
 
   @override
-  Future<void> twoFingerMoveBy(double aDx, double aDy, double bDx, double bDy) async {}
+  Future<void> twoFingerMoveBy(double dx, double dy) async {}
 
   @override
   Future<void> twoFingerMoveEnd() async {}

@@ -49,7 +49,7 @@ class GestureInjector {
     /**
      * セッション終了時などに強制的に内部状態を破棄する。
      * ドラッグ/2本指ジェスチャの途中でセッションが終了する(例: 外部ディスプレイ切断)と
-     * pointerUp/twoFingerEnd が一度も呼ばれずに進行中状態が残り、それ以降ずっと
+     * pointerUp/twoFingerScrollEnd が一度も呼ばれずに進行中状態が残り、それ以降ずっと
      * 「タッチできない」状態に陥ってしまうため、必ずここで解放する。
      */
     fun reset() {
@@ -382,6 +382,66 @@ class GestureInjector {
             return GestureAck.DISPATCH_FAILED
         }
         return GestureAck.ACCEPTED
+    }
+
+    /**
+     * 2本指スワイプ（フリック）。開始位置から終了位置まで2点を同じ量だけ動かす
+     * 単発ジェスチャーを dispatch する。スクロールとの区別は Flutter 側で行う。
+     */
+    fun twoFingerSwipe(
+        service: AccessibilityService,
+        displayId: Int,
+        startAX: Float,
+        startAY: Float,
+        startBX: Float,
+        startBY: Float,
+        endAX: Float,
+        endAY: Float,
+        endBX: Float,
+        endBY: Float,
+        durationMs: Long,
+        onOutcome: (String) -> Unit,
+    ): Boolean {
+        if (active != ActiveGesture.None) {
+            lastGestureResult = "busy"
+            Log.w(TAG, "twoFingerSwipe rejected: active=${active::class.simpleName}")
+            return false
+        }
+
+        val pathA = Path().apply {
+            moveTo(startAX, startAY)
+            lineTo(endAX, endAY)
+        }
+        val pathB = Path().apply {
+            moveTo(startBX, startBY)
+            lineTo(endBX, endBY)
+        }
+        val strokeA = GestureDescription.StrokeDescription(
+            pathA,
+            0,
+            durationMs.coerceAtLeast(MIN_DURATION_MS),
+        )
+        val strokeB = GestureDescription.StrokeDescription(
+            pathB,
+            0,
+            durationMs.coerceAtLeast(MIN_DURATION_MS),
+        )
+
+        active = ActiveGesture.SingleShot
+        val accepted = dispatchGesture(
+            service,
+            displayId,
+            listOf(strokeA, strokeB),
+            owner = ActiveGesture.SingleShot,
+            onCompleted = { active = ActiveGesture.None },
+            onOutcome = onOutcome,
+        )
+        if (!accepted) {
+            active = ActiveGesture.None
+            lastGestureResult = "dispatch_failed"
+            Log.w(TAG, "twoFingerSwipe dispatch rejected by AccessibilityService")
+        }
+        return accepted
     }
 
     /**

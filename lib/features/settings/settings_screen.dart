@@ -134,7 +134,7 @@ class SettingsScreen extends ConsumerWidget {
             _SectionLabel('誤操作防止・画面保護'),
             _ToggleRow(
               label: 'タッチロック',
-              description: '30秒無操作でロックし、2秒長押しで解除する',
+              description: '30秒無操作でロック。ロック中は長押しで解除(解除中に指を動かすと解除は無効になります)',
               value: settings.touchLockEnabled,
               onChanged: (v) => notifier.updateSettings((s) => s.copyWith(touchLockEnabled: v)),
             ),
@@ -143,6 +143,12 @@ class SettingsScreen extends ConsumerWidget {
               description: '数分ごとにUI位置をわずかにずらす',
               value: settings.oledProtection,
               onChanged: (v) => notifier.updateSettings((s) => s.copyWith(oledProtection: v)),
+            ),
+            _ToggleRow(
+              label: 'ジェスチャ診断表示',
+              description: 'タッチパッド画面に認識器の状態を表示する(開発・調整用)',
+              value: settings.showGestureDebug,
+              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(showGestureDebug: v)),
             ),
             const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
             const _SectionLabel('使い方'),

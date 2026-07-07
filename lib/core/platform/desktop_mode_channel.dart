@@ -91,14 +91,18 @@ class DesktopModeChannel implements DesktopModeApi {
   Future<void> pointerUp() => _method.invokeMethod('pointerUp');
 
   @override
-  Future<void> twoFingerMoveStart() => _method.invokeMethod('twoFingerMoveStart');
+  Future<void> twoFingerScrollStart() => _method.invokeMethod('twoFingerScrollStart');
 
   @override
-  Future<void> twoFingerMoveBy(double dx, double dy) =>
-      _method.invokeMethod('twoFingerMoveBy', {'dx': dx, 'dy': dy});
+  Future<void> twoFingerScrollBy(double dx, double dy) =>
+      _method.invokeMethod('twoFingerScrollBy', {'dx': dx, 'dy': dy});
 
   @override
-  Future<void> twoFingerMoveEnd() => _method.invokeMethod('twoFingerMoveEnd');
+  Future<void> twoFingerScrollEnd() => _method.invokeMethod('twoFingerScrollEnd');
+
+  @override
+  Future<void> twoFingerSwipe(double dx, double dy) =>
+      _method.invokeMethod('twoFingerSwipe', {'dx': dx, 'dy': dy});
 
   @override
   Future<bool> systemAction(String action) async =>

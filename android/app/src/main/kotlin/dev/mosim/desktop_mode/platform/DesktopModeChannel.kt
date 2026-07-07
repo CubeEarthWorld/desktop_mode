@@ -82,20 +82,27 @@ class DesktopModeChannel(
                     result.success(null)
                 }
 
-                "twoFingerMoveStart" -> {
-                    controller.twoFingerMoveStart()
+                "twoFingerScrollStart" -> {
+                    controller.twoFingerScrollStart()
                     result.success(null)
                 }
 
-                "twoFingerMoveBy" -> {
+                "twoFingerScrollBy" -> {
                     val dx = (call.argument<Number>("dx") ?: 0).toFloat()
                     val dy = (call.argument<Number>("dy") ?: 0).toFloat()
-                    controller.twoFingerMoveBy(dx, dy)
+                    controller.twoFingerScrollBy(dx, dy)
                     result.success(null)
                 }
 
-                "twoFingerMoveEnd" -> {
-                    controller.twoFingerMoveEnd()
+                "twoFingerScrollEnd" -> {
+                    controller.twoFingerScrollEnd()
+                    result.success(null)
+                }
+
+                "twoFingerSwipe" -> {
+                    val dx = (call.argument<Number>("dx") ?: 0).toFloat()
+                    val dy = (call.argument<Number>("dy") ?: 0).toFloat()
+                    controller.twoFingerSwipe(dx, dy)
                     result.success(null)
                 }
 

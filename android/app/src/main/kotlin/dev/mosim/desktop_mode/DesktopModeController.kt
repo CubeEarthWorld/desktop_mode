@@ -31,7 +31,9 @@ import org.json.JSONObject
 
 private const val TAG = "DesktopModeController"
 private const val HOME_LAUNCH_COOLDOWN_MS = 1500L
-private const val TWO_FINGER_INITIAL_SPREAD_PX = 120f
+private const val TWO_FINGER_INITIAL_SPREAD_PX = 80f
+private const val SWIPE_DISTANCE_SCALE = 4f
+private const val SWIPE_DURATION_MS = 150L
 
 /**
  * アプリ全体の唯一の調停者。認識(Flutter)/注入(GestureInjector)/
@@ -298,7 +300,7 @@ class DesktopModeController private constructor(private val appContext: Context)
         twoFingerPointA = null
         twoFingerPointB = null
         // ドラッグ/2本指ジェスチャの途中でセッションが終了すると(例: 外部ディスプレイ切断)
-        // pointerUp/twoFingerEnd が呼ばれないまま GestureInjector が busy=true で
+        // pointerUp/twoFingerScrollEnd が呼ばれないまま GestureInjector が busy=true で
         // 固まってしまい、以後ずっとタップできなくなる。ここで必ず解放する。
         gestureInjector.reset()
     }
@@ -426,12 +428,12 @@ class DesktopModeController private constructor(private val appContext: Context)
     }
 
     /**
-     * 2本指スワイプの開始。カーソル位置を中心に一定間隔の仮想2点を置き、
-     * 以後は [twoFingerMoveBy] で常に**同じ量**だけ両点を動かす(タッチパッドは
+     * 2本指スクロールの開始。カーソル位置を中心に一定間隔の仮想2点を置き、
+     * 以後は [twoFingerScrollBy] で常に**同じ量**だけ両点を動かす(タッチパッドは
      * 絶対座標を持たないため)。2点の間隔が常に一定に保たれるため、外部ディスプレイの
-     * アプリからはピンチではなく常にスワイプ/スクロールとして解釈される。
+     * アプリからはピンチではなく常にスクロールとして解釈される。
      */
-    fun twoFingerMoveStart() {
+    fun twoFingerScrollStart() {
         markCursorActivity()
         val cursor = cursorState
             ?: throw DesktopModeException("session_not_active", "セッションが開始されていません")
@@ -449,11 +451,11 @@ class DesktopModeController private constructor(private val appContext: Context)
             a.y,
             b.x,
             b.y,
-            onCancelledError("gesture_failed", "2本指ジェスチャの開始がキャンセルされました"),
+            onCancelledError("gesture_failed", "2本指スクロールの開始がキャンセルされました"),
         )
     }
 
-    fun twoFingerMoveBy(dxPx: Float, dyPx: Float) {
+    fun twoFingerScrollBy(dxPx: Float, dyPx: Float) {
         markCursorActivity()
         val a = twoFingerPointA ?: return
         val b = twoFingerPointB ?: return
@@ -461,7 +463,7 @@ class DesktopModeController private constructor(private val appContext: Context)
         val bounds = displaySessionManager.bounds(display)
 
         // 両点を必ず同じ量だけ動かす: 間隔が変化しないため、外部ディスプレイ側で
-        // ピンチと解釈されることがない(常にスワイプ/スクロール)。境界では2点を
+        // ピンチと解釈されることがない(常にスクロール)。境界では2点を
         // 独立にクランプすると間隔が崩れてしまうため、両点とも収まる範囲に
         // クランプした単一のデルタを両点へ適用する。
         val dx = clampDeltaForBothPoints(dxPx * config.pointerSpeed, a.x, b.x, bounds.left.toFloat(), bounds.right.toFloat())
@@ -482,9 +484,9 @@ class DesktopModeController private constructor(private val appContext: Context)
             ignoreOutcome,
         )
         if (!moved) {
-            // pointerMove と同じ理由(§ pointerMove 参照): twoFingerMoveStart が届いて
+            // pointerMove と同じ理由(§ pointerMove 参照): twoFingerScrollStart が届いて
             // いない/失敗している場合に無言で無視すると、仮想カーソルの見た目だけが
-            // 動いて実際のスワイプ注入が送られない。現在の2点でスワイプを張り直す。
+            // 動いて実際のスクロール注入が送られない。現在の2点でスクロールを張り直す。
             gestureInjector.twoFingerStart(
                 service,
                 display.displayId,
@@ -492,12 +494,12 @@ class DesktopModeController private constructor(private val appContext: Context)
                 a.y,
                 b.x,
                 b.y,
-                onCancelledError("gesture_failed", "2本指スワイプの再開がキャンセルされました"),
+                onCancelledError("gesture_failed", "2本指スクロールの再開がキャンセルされました"),
             )
         }
     }
 
-    fun twoFingerMoveEnd() {
+    fun twoFingerScrollEnd() {
         markCursorActivity()
         val a = twoFingerPointA ?: return
         val b = twoFingerPointB ?: return
@@ -515,7 +517,44 @@ class DesktopModeController private constructor(private val appContext: Context)
             a.y,
             b.x,
             b.y,
-            onCancelledError("gesture_failed", "2本指ジェスチャの終了がキャンセルされました"),
+            onCancelledError("gesture_failed", "2本指スクロールの終了がキャンセルされました"),
+        )
+    }
+
+    /**
+     * 2本指の素早いスワイプ（フリック）。開始位置から [dxPx]/[dyPx] 方向へ
+     * スケールした距離を一気に移動する単発ジェスチャーを dispatch する。
+     */
+    fun twoFingerSwipe(dxPx: Float, dyPx: Float) {
+        markCursorActivity()
+        val cursor = cursorState
+            ?: throw DesktopModeException("session_not_active", "セッションが開始されていません")
+        val display = targetDisplay ?: return
+        val service = accessibilityService ?: return
+        val bounds = displaySessionManager.bounds(display)
+
+        val startA = PointF(cursor.x - TWO_FINGER_INITIAL_SPREAD_PX, cursor.y)
+        val startB = PointF(cursor.x + TWO_FINGER_INITIAL_SPREAD_PX, cursor.y)
+
+        val rawDx = dxPx * config.pointerSpeed * SWIPE_DISTANCE_SCALE
+        val rawDy = dyPx * config.pointerSpeed * SWIPE_DISTANCE_SCALE
+
+        val dx = clampDeltaForBothPoints(rawDx, startA.x, startB.x, bounds.left.toFloat(), bounds.right.toFloat())
+        val dy = clampDeltaForBothPoints(rawDy, startA.y, startB.y, bounds.top.toFloat(), bounds.bottom.toFloat())
+
+        gestureInjector.twoFingerSwipe(
+            service,
+            display.displayId,
+            startA.x,
+            startA.y,
+            startB.x,
+            startB.y,
+            startA.x + dx,
+            startA.y + dy,
+            startB.x + dx,
+            startB.y + dy,
+            SWIPE_DURATION_MS,
+            onCancelledError("gesture_failed", "2本指スワイプがキャンセルされました"),
         )
     }
 
@@ -592,7 +631,9 @@ class DesktopModeController private constructor(private val appContext: Context)
         )
 
         return when (action) {
-            "back" -> injectSwipe(2f, height * 0.5f, width * 0.18f, height * 0.5f, 180L)
+            // 戻るジェスチャは、画面端から内側へしっかりとスワイプしないと
+            // タッチ/長押しとして誤認識されることがあるため、距離と速度を大きめにする。
+            "back" -> injectSwipe(1f, height * 0.5f, width * 0.35f, height * 0.5f, 180L)
             "home" -> injectSwipe(width * 0.5f, height - 2f, width * 0.5f, height * 0.68f, 260L)
             else -> false
         }
@@ -801,6 +842,9 @@ class DesktopModeController private constructor(private val appContext: Context)
      * 指定アプリを外部ディスプレイ(セッションの target display)上で起動する。
      * `launchHomeOnDisplay` と同じ「向き不一致ならレターボックス」ロジックを再利用する
      * (DRY: 唯一の違いは CATEGORY_HOME を付けないことと、対象が固定でなく任意アプリなこと)。
+     *
+     * 既にメインディスプレイなど別ディスプレイで起動済みのアプリがあった場合、
+     * 既存タスクをクリアして必ず外部ディスプレイ上に新しいタスクを作る。
      */
     fun launchApp(packageName: String, activityName: String): Boolean {
         val display = targetDisplay
@@ -809,7 +853,11 @@ class DesktopModeController private constructor(private val appContext: Context)
         val bounds = computeLetterboxBounds(display, info)
         return launchHomeIntent(display.displayId, bounds) {
             Intent(Intent.ACTION_MAIN)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TASK,
+                )
                 .setClassName(packageName, activityName)
         }
     }
@@ -965,7 +1013,7 @@ class DesktopModeController private constructor(private val appContext: Context)
 /**
  * [delta] を、[pointA]・[pointB] の両方が適用後も `[min, max]` に収まるようにクランプする。
  * 2点を独立にクランプすると一方だけ先に境界に達して間隔(≒ピンチかどうか)が
- * 崩れてしまうため、両点に同じデルタを適用する [DesktopModeController.twoFingerMoveBy] の
+ * 崩れてしまうため、両点に同じデルタを適用する [DesktopModeController.twoFingerScrollBy] の
  * 不変条件(間隔一定)を維持するために使う。
  */
 private fun clampDeltaForBothPoints(delta: Float, pointA: Float, pointB: Float, min: Float, max: Float): Float {

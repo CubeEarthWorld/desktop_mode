@@ -11,6 +11,7 @@ import '../../core/platform/desktop_mode_channel.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_dimens.dart';
+import '../../core/theme/app_colors.dart';
 import 'touchpad_controller.dart';
 import 'widgets/app_list_sheet.dart';
 import 'widgets/lock_overlay.dart';
@@ -70,6 +71,7 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
     final accessibilityEnabled = ref.watch(
       appStatusProvider.select((status) => status.accessibilityEnabled),
     );
+    final settings = ref.watch(settingsProvider).value ?? const AppSettings();
     final api = ref.read(desktopModeApiProvider);
 
     return Scaffold(
@@ -85,6 +87,37 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
                     child: Stack(
                       children: [
                         TouchSurface(state: state, controller: controller),
+                        if (settings.showGestureDebug && !state.locked)
+                          Positioned(
+                            top: 48,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.background.withAlpha(204),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'phase: ${state.currentPhase}\nlast: ${state.lastGestureResult}',
+                                style: const TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: 11,
+                                  fontFamily: 'monospace',
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (settings.touchLockEnabled && !state.locked)
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: IconButton(
+                              icon: const Icon(Icons.lock_outline),
+                              tooltip: '今すぐロック',
+                              onPressed: controller.lockNow,
+                            ),
+                          ),
                         Positioned(
                           top: 8,
                           right: 8,

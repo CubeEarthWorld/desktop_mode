@@ -16,7 +16,7 @@ void main() {
       expect(result, [isA<LeftClickResult>()]);
     });
 
-    test('single tap held too long emits nothing', () {
+    test('single tap held too long emits nothing when long press threshold has not elapsed', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       final result = recognizer.onPointerUp(1, const Duration(milliseconds: 300));
 
@@ -60,11 +60,47 @@ void main() {
 
     test('second finger arriving after twoFingerWindow goes dead', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 200));
-      recognizer.onPointerUp(1, const Duration(milliseconds: 250));
-      final finalUp = recognizer.onPointerUp(2, const Duration(milliseconds: 250));
+      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 360));
+      recognizer.onPointerUp(1, const Duration(milliseconds: 400));
+      final finalUp = recognizer.onPointerUp(2, const Duration(milliseconds: 400));
 
       expect(finalUp, isEmpty);
+    });
+
+    test('second finger recognized even if first finger nudged slightly', () {
+      // 1本目の指がわずかに動いても、累積距離が tapSlop 未満なら2本指として認識する。
+      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+      recognizer.onPointerMove(
+        1,
+        const Offset(11, 11),
+        const Duration(milliseconds: 20),
+      );
+      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 80));
+
+      final moveResult = recognizer.onPointerMove(
+        1,
+        const Offset(11, 20),
+        const Duration(milliseconds: 100),
+      );
+      expect(moveResult, [isA<TwoFingerScrollStartResult>(), isA<TwoFingerScrollMoveResult>()]);
+    });
+
+    test('second finger ignored when first finger clearly moved', () {
+      // 1本目が明らかに動いた後に2本目を追加しても、2本指にはならない。
+      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+      recognizer.onPointerMove(
+        1,
+        const Offset(30, 10),
+        const Duration(milliseconds: 20),
+      );
+      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 80));
+
+      final moveResult = recognizer.onPointerMove(
+        2,
+        const Offset(60, 60),
+        const Duration(milliseconds: 100),
+      );
+      expect(moveResult, isEmpty);
     });
 
     test('third finger forces dead state', () {
@@ -115,13 +151,13 @@ void main() {
       expect(result, [isA<LeftClickResult>()]);
     });
 
-    test('pointer cancel during two-finger swipe emits TwoFingerSwipeEndResult', () {
+    test('pointer cancel during two-finger scroll emits TwoFingerScrollEndResult', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
       recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
 
       final cancelResult = recognizer.onPointerCancel(1);
-      expect(cancelResult, [isA<TwoFingerSwipeEndResult>()]);
+      expect(cancelResult, [isA<TwoFingerScrollEndResult>()]);
 
       // 残った指がキャンセルされても、既に dead 状態なので何も送らない。
       final secondCancel = recognizer.onPointerCancel(2);
@@ -249,31 +285,35 @@ void main() {
       expect(upResult, [isA<LeftClickResult>()]);
     });
 
-    test('two fingers moving together emit TwoFingerSwipeStart then half-delta moves', () {
+    test('two fingers moving slowly emit TwoFingerScrollStart then half-delta moves', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
 
+      // ゆっくり移動: 80ms で 30px = 0.375 px/ms < スワイプ閾値
       final moveA = recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
-      expect(moveA, [isA<TwoFingerSwipeStartResult>(), isA<TwoFingerSwipeMoveResult>()]);
-      final firstMove = moveA[1] as TwoFingerSwipeMoveResult;
-      // 重心(2点平均)の移動量として、実際の移動量の半分を返す。
+      expect(moveA, [isA<TwoFingerScrollStartResult>(), isA<TwoFingerScrollMoveResult>()]);
+      final firstMove = moveA[1] as TwoFingerScrollMoveResult;
+      // 重心の移動量を返す。1本目のみ動いたので重心は 15px 動く。
       expect(firstMove.dy, 15);
 
-      final moveB = recognizer.onPointerMove(2, const Offset(50, 80), const Duration(milliseconds: 90));
-      expect(moveB, [isA<TwoFingerSwipeMoveResult>()]);
-      final secondMove = moveB.single as TwoFingerSwipeMoveResult;
+      final moveB = recognizer.onPointerMove(2, const Offset(50, 80), const Duration(milliseconds: 160));
+      expect(moveB, [isA<TwoFingerScrollMoveResult>()]);
+      final secondMove = moveB.single as TwoFingerScrollMoveResult;
       expect(secondMove.dy, 15);
       // 2指分を合算すると実際に動いた量(30+30)と一致する。
       expect(firstMove.dy + secondMove.dy, 30);
+
+      final endResult = recognizer.onPointerUp(1, const Duration(milliseconds: 200));
+      expect(endResult, [isA<TwoFingerScrollEndResult>()]);
     });
 
-    test('lifting one finger during two-finger swipe ends the gesture and ignores the rest', () {
+    test('lifting one finger during two-finger scroll ends the gesture and ignores the rest', () {
       recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
       recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
       recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
 
       final endResult = recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-      expect(endResult, [isA<TwoFingerSwipeEndResult>()]);
+      expect(endResult, [isA<TwoFingerScrollEndResult>()]);
 
       // 残った指の動きは無視される(誤ってカーソル移動やタップにならない)。
       final ignoredMove = recognizer.onPointerMove(
@@ -294,6 +334,86 @@ void main() {
 
       expect(firstUp, isEmpty);
       expect(secondUp, isEmpty);
+    });
+
+    test('two-finger tiny movement immediately starts scroll without slop', () {
+      // tapSlop(12px) を大幅に下回るわずかな動きでも、2本指状態では即座に
+      // スクロールとして認識する。
+      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+
+      final moveResult = recognizer.onPointerMove(
+        1,
+        const Offset(11, 11),
+        const Duration(milliseconds: 80),
+      );
+      expect(moveResult, [isA<TwoFingerScrollStartResult>(), isA<TwoFingerScrollMoveResult>()]);
+    });
+
+    group('two-finger swipe', () {
+      test('quick two-finger slide emits swipe result on release', () {
+        recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+        recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+
+        // 素早く右方向へ 50px 移動: 20ms で重心移動 25px = 1.25 px/ms >= 閾値
+        recognizer.onPointerMove(1, const Offset(60, 10), const Duration(milliseconds: 70));
+        recognizer.onPointerMove(2, const Offset(100, 50), const Duration(milliseconds: 70));
+
+        final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 80));
+        recognizer.onPointerUp(2, const Duration(milliseconds: 80));
+
+        expect(upResult, [isA<TwoFingerSwipeResult>()]);
+        final swipe = upResult.single as TwoFingerSwipeResult;
+        expect(swipe.dx, greaterThan(0));
+      });
+
+      test('slow two-finger slide emits scroll, not swipe', () {
+        recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+        recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+
+        // ゆっくり右方向へ 50px 移動: 200ms で重心移動 25px = 0.125 px/ms < 閾値
+        recognizer.onPointerMove(1, const Offset(60, 10), const Duration(milliseconds: 250));
+        recognizer.onPointerMove(2, const Offset(100, 50), const Duration(milliseconds: 250));
+
+        final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 300));
+        expect(upResult, [isA<TwoFingerScrollEndResult>()]);
+      });
+
+      test('scroll transitions to swipe when movement becomes fast', () {
+        recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+        recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+
+        // 最初はゆっくり（スクロール）
+        final slowMove = recognizer.onPointerMove(
+          1,
+          const Offset(15, 10),
+          const Duration(milliseconds: 150),
+        );
+        expect(slowMove, [isA<TwoFingerScrollStartResult>(), isA<TwoFingerScrollMoveResult>()]);
+
+        // その後素早く移動（スワイプへ遷移）
+        final fastMove = recognizer.onPointerMove(
+          1,
+          const Offset(60, 10),
+          const Duration(milliseconds: 170),
+        );
+        expect(fastMove, [isA<TwoFingerScrollEndResult>()]);
+
+        final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 180));
+        expect(upResult, [isA<TwoFingerSwipeResult>()]);
+      });
+
+      test('short quick movement below min distance is treated as scroll, not swipe', () {
+        recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
+        recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
+
+        // 5px を 4ms で動かすと速いが、重心移動は 2.5px で最小距離未満
+        recognizer.onPointerMove(1, const Offset(15, 10), const Duration(milliseconds: 54));
+        recognizer.onPointerMove(2, const Offset(55, 50), const Duration(milliseconds: 54));
+
+        final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 60));
+        expect(upResult, [isA<TwoFingerScrollEndResult>()]);
+      });
     });
   });
 }

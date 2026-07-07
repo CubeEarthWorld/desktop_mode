@@ -17,6 +17,7 @@ Future<void> showAppListSheet(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: const Color(0xFF0A0A0A),
     builder: (sheetContext) => _AppListSheetContent(api: api),
   );
@@ -43,13 +44,19 @@ class _AppListSheetContentState extends State<_AppListSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.viewInsetsOf(context).bottom;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
       builder: (context, scrollController) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimens.screenPadding),
+        padding: EdgeInsets.only(
+          left: AppDimens.screenPadding,
+          right: AppDimens.screenPadding,
+          bottom: bottomPadding,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -67,7 +74,11 @@ class _AppListSheetContentState extends State<_AppListSheetContent> {
             const SizedBox(height: AppDimens.spacingMedium),
             const Text(
               'アプリ一覧',
-              style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.foreground,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: AppDimens.spacingSmall),
             TextField(
@@ -93,25 +104,25 @@ class _AppListSheetContentState extends State<_AppListSheetContent> {
                       .toList();
                   if (apps.isEmpty) {
                     return const Center(
-                      child: Text('該当するアプリがありません', style: TextStyle(color: AppColors.disabled)),
+                      child: Text(
+                        '該当するアプリがありません',
+                        style: TextStyle(color: AppColors.disabled),
+                      ),
                     );
                   }
-                  return ListView.builder(
+                  return GridView.builder(
                     controller: scrollController,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.78,
+                    ),
                     itemCount: apps.length,
                     itemBuilder: (context, index) {
                       final app = apps[index];
-                      return ListTile(
-                        leading: app.iconPng != null
-                            ? Image.memory(
-                                app.iconPng!,
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => _defaultAppIcon(),
-                              )
-                            : _defaultAppIcon(),
-                        title: Text(app.label, style: const TextStyle(color: AppColors.foreground)),
+                      return _AppGridTile(
+                        app: app,
                         onTap: () {
                           unawaited(widget.api.launchApp(app.packageName, app.activityName));
                           Navigator.of(context).pop();
@@ -127,11 +138,59 @@ class _AppListSheetContentState extends State<_AppListSheetContent> {
       ),
     );
   }
+}
+
+class _AppGridTile extends StatelessWidget {
+  const _AppGridTile({required this.app, required this.onTap});
+
+  final HomeAppInfo app;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimens.cornerRadius),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: app.iconPng != null
+                  ? Image.memory(
+                      app.iconPng!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => _defaultAppIcon(),
+                    )
+                  : _defaultAppIcon(),
+            ),
+            const SizedBox(height: AppDimens.spacingSmall),
+            Text(
+              app.label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.foreground,
+                fontSize: 12,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   /// アイコン取得に失敗した、または未対応のアプリ用のプレースホルダー。
   Widget _defaultAppIcon() => const SizedBox(
-    width: 40,
-    height: 40,
-    child: Icon(Icons.apps, color: AppColors.disabled),
+    width: 48,
+    height: 48,
+    child: Icon(Icons.apps, color: AppColors.disabled, size: 32),
   );
 }

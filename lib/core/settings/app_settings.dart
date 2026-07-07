@@ -7,11 +7,15 @@ class AppSettings {
     this.showCursor = true,
     this.showTouchGlow = true,
     this.pointerSpeed = 1.8,
-    this.longPressDurationMs = 550,
+    // 長押しドラッグ開始までの待ち時間を短縮。実機で550msは長すぎて
+    // ユーザーが待てずに動かしてカーソル移動になってしまうことがあったため、
+    // 450msを既定値とする。
+    this.longPressDurationMs = 450,
     this.cursorIdleTimeoutMs = 3000,
     this.preferredDisplayId,
     this.touchLockEnabled = false,
     this.oledProtection = false,
+    this.showGestureDebug = false,
     this.externalHomePackage,
     this.externalHomeActivity,
     this.preferredDisplayModeId,
@@ -23,11 +27,12 @@ class AppSettings {
     showCursor: json['showCursor'] as bool? ?? true,
     showTouchGlow: json['showTouchGlow'] as bool? ?? true,
     pointerSpeed: (json['pointerSpeed'] as num?)?.toDouble() ?? 1.8,
-    longPressDurationMs: json['longPressDurationMs'] as int? ?? 550,
+    longPressDurationMs: json['longPressDurationMs'] as int? ?? 450,
     cursorIdleTimeoutMs: json['cursorIdleTimeoutMs'] as int? ?? 3000,
     preferredDisplayId: json['preferredDisplayId'] as int?,
     touchLockEnabled: json['touchLockEnabled'] as bool? ?? false,
     oledProtection: json['oledProtection'] as bool? ?? false,
+    showGestureDebug: json['showGestureDebug'] as bool? ?? false,
     externalHomePackage: json['externalHomePackage'] as String?,
     externalHomeActivity: json['externalHomeActivity'] as String?,
     preferredDisplayModeId: json['preferredDisplayModeId'] as int?,
@@ -50,6 +55,7 @@ class AppSettings {
   final int? preferredDisplayId;
   final bool touchLockEnabled;
   final bool oledProtection;
+  final bool showGestureDebug;
 
   /// 外部ディスプレイでホームとして起動するアプリの明示指定。
   /// null は「システム標準のホームアプリを使う」を意味する(§4.1 の一方向フロー)。
@@ -71,6 +77,7 @@ class AppSettings {
     'preferredDisplayId': preferredDisplayId,
     'touchLockEnabled': touchLockEnabled,
     'oledProtection': oledProtection,
+    'showGestureDebug': showGestureDebug,
     'externalHomePackage': externalHomePackage,
     'externalHomeActivity': externalHomeActivity,
     'preferredDisplayModeId': preferredDisplayModeId,
@@ -88,6 +95,7 @@ class AppSettings {
     bool clearPreferredDisplayId = false,
     bool? touchLockEnabled,
     bool? oledProtection,
+    bool? showGestureDebug,
     String? externalHomePackage,
     String? externalHomeActivity,
     bool clearExternalHomeApp = false,
@@ -106,6 +114,7 @@ class AppSettings {
         : (preferredDisplayId ?? this.preferredDisplayId),
     touchLockEnabled: touchLockEnabled ?? this.touchLockEnabled,
     oledProtection: oledProtection ?? this.oledProtection,
+    showGestureDebug: showGestureDebug ?? this.showGestureDebug,
     externalHomePackage: clearExternalHomeApp
         ? null
         : (externalHomePackage ?? this.externalHomePackage),

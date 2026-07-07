@@ -14,8 +14,10 @@ import 'package:desktop_mode/models/session_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 実 MethodChannel を叩かないフェイク実装。
+/// 実 MethodChannel を叩かないフェイク実装。呼び出し順を記録する。
 class _FakeDesktopModeApi implements DesktopModeApi {
+  final List<String> calls = [];
+
   @override
   Future<List<DisplayInfo>> getDisplays() async => const [];
 
@@ -29,37 +31,64 @@ class _FakeDesktopModeApi implements DesktopModeApi {
   Future<SessionState> startSession({int? displayId}) async => SessionState.idleState;
 
   @override
-  Future<void> stopSession() async {}
+  Future<void> stopSession() async {
+    calls.add('stopSession');
+  }
 
   @override
-  Future<void> moveCursor(double dx, double dy) async {}
+  Future<void> moveCursor(double dx, double dy) async {
+    calls.add('moveCursor($dx,$dy)');
+  }
 
   @override
-  Future<void> leftClick() async {}
+  Future<void> leftClick() async {
+    calls.add('leftClick');
+  }
 
   @override
-  Future<void> longPress() async {}
+  Future<void> longPress() async {
+    calls.add('longPress');
+  }
 
   @override
-  Future<void> showTouchEffectAtCursor() async {}
+  Future<void> showTouchEffectAtCursor() async {
+    calls.add('showTouchEffectAtCursor');
+  }
 
   @override
-  Future<void> pointerDown() async {}
+  Future<void> pointerDown() async {
+    calls.add('pointerDown');
+  }
 
   @override
-  Future<void> pointerMove(double dx, double dy) async {}
+  Future<void> pointerMove(double dx, double dy) async {
+    calls.add('pointerMove($dx,$dy)');
+  }
 
   @override
-  Future<void> pointerUp() async {}
+  Future<void> pointerUp() async {
+    calls.add('pointerUp');
+  }
 
   @override
-  Future<void> twoFingerMoveStart() async {}
+  Future<void> twoFingerScrollStart() async {
+    calls.add('twoFingerScrollStart');
+  }
 
   @override
-  Future<void> twoFingerMoveBy(double dx, double dy) async {}
+  Future<void> twoFingerScrollBy(double dx, double dy) async {
+    calls.add('twoFingerScrollBy($dx,$dy)');
+  }
 
   @override
-  Future<void> twoFingerMoveEnd() async {}
+  Future<void> twoFingerScrollEnd() async {
+    calls.add('twoFingerScrollEnd');
+  }
+
+  @override
+  Future<void> twoFingerSwipe(double dx, double dy) async {
+    calls.add('twoFingerSwipe($dx,$dy)');
+  }
 
   @override
   Future<bool> systemAction(String action) async => true;
@@ -176,6 +205,192 @@ void main() {
       expect(container.read(touchpadControllerProvider).locked, true);
 
       container.dispose();
+    });
+
+    testWidgets('movement during unlock hold cancels unlock', (tester) async {
+      final container = _createContainer(const AppSettings(touchLockEnabled: true));
+
+      await container.read(settingsProvider.future);
+      container.listen(touchpadControllerProvider, (_, _) {});
+      await tester.pump();
+
+      final controller = container.read(touchpadControllerProvider.notifier);
+      await tester.pump(const Duration(seconds: 30));
+      expect(container.read(touchpadControllerProvider).locked, true);
+
+      // ロック解除ホールドを開始する。
+      controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(container.read(touchpadControllerProvider).unlockHoldProgress, greaterThan(0));
+
+      // 解除中に指を動かすと、解除は無効になりリセットされる。
+      controller.handlePointerMove(1, const Offset(120, 120), Duration.zero);
+      await tester.pump();
+      expect(container.read(touchpadControllerProvider).unlockHoldProgress, 0);
+      expect(container.read(touchpadControllerProvider).locked, true);
+
+      // ホールドがキャンセルされた後は、規定時間待っても解除されない。
+      await tester.pump(const Duration(milliseconds: 2000));
+      expect(container.read(touchpadControllerProvider).locked, true);
+
+      container.dispose();
+    });
+
+    testWidgets('lockNow immediately locks', (tester) async {
+      final container = _createContainer(const AppSettings(touchLockEnabled: true));
+
+      await container.read(settingsProvider.future);
+      container.listen(touchpadControllerProvider, (_, _) {});
+      await tester.pump();
+
+      final controller = container.read(touchpadControllerProvider.notifier);
+      expect(container.read(touchpadControllerProvider).locked, false);
+
+      controller.lockNow();
+      await tester.pump();
+
+      expect(container.read(touchpadControllerProvider).locked, true);
+
+      container.dispose();
+    });
+    group('gesture dispatch', () {
+      testWidgets('drag start is delayed until first move', (tester) async {
+        final container = _createContainer(
+          const AppSettings(longPressDurationMs: 300, showTouchGlow: false),
+        );
+
+        await container.read(settingsProvider.future);
+        container.listen(touchpadControllerProvider, (_, _) {});
+        await tester.pump();
+
+        final controller = container.read(touchpadControllerProvider.notifier);
+
+        controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+        await tester.pump(const Duration(milliseconds: 300));
+        // 長押し武装後もまだ pointerDown は送られていない。
+        final api = container.read(desktopModeApiProvider) as _FakeDesktopModeApi;
+        expect(api.calls.where((c) => c == 'pointerDown'), isEmpty);
+
+        // 最初の移動と同時に pointerDown が送出される。
+        controller.handlePointerMove(1, const Offset(120, 100), const Duration(milliseconds: 310));
+        tester.binding.scheduleFrame();
+        await tester.pump();
+        expect(api.calls, contains('pointerDown'));
+        final downIndex = api.calls.indexOf('pointerDown');
+        final moveIndex = api.calls.indexWhere((c) => c.startsWith('pointerMove'));
+        expect(moveIndex, greaterThan(downIndex));
+
+        controller.handlePointerUp(1, const Duration(milliseconds: 400));
+        await tester.pump();
+        expect(api.calls.last, 'pointerUp');
+
+        container.dispose();
+      });
+
+      testWidgets('drag without movement only emits longPress, not pointerDown', (tester) async {
+        final container = _createContainer(
+          const AppSettings(longPressDurationMs: 300, showTouchGlow: false),
+        );
+
+        await container.read(settingsProvider.future);
+        container.listen(touchpadControllerProvider, (_, _) {});
+        await tester.pump();
+
+        final controller = container.read(touchpadControllerProvider.notifier);
+        final api = container.read(desktopModeApiProvider) as _FakeDesktopModeApi;
+
+        controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+        await tester.pump(const Duration(milliseconds: 300));
+        controller.handlePointerUp(1, const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(api.calls, contains('longPress'));
+        expect(api.calls.where((c) => c == 'pointerDown'), isEmpty);
+
+        container.dispose();
+      });
+
+      testWidgets('two-finger scroll start is delayed until first move', (tester) async {
+        final container = _createContainer(const AppSettings(showTouchGlow: false));
+
+        await container.read(settingsProvider.future);
+        container.listen(touchpadControllerProvider, (_, _) {});
+        await tester.pump();
+
+        final controller = container.read(touchpadControllerProvider.notifier);
+        final api = container.read(desktopModeApiProvider) as _FakeDesktopModeApi;
+
+        controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+        controller.handlePointerDown(2, const Offset(140, 100), const Duration(milliseconds: 50));
+        await tester.pump();
+        // 2本指を置いただけでは twoFingerScrollStart は送られていない。
+        expect(api.calls.where((c) => c == 'twoFingerScrollStart'), isEmpty);
+
+        controller.handlePointerMove(1, const Offset(100, 130), const Duration(milliseconds: 200));
+        tester.binding.scheduleFrame();
+        await tester.pump();
+        expect(api.calls, contains('twoFingerScrollStart'));
+        final startIndex = api.calls.indexOf('twoFingerScrollStart');
+        final moveIndex = api.calls.indexWhere((c) => c.startsWith('twoFingerScrollBy'));
+        expect(moveIndex, greaterThan(startIndex));
+
+        controller.handlePointerUp(1, const Duration(milliseconds: 250));
+        await tester.pump();
+        expect(api.calls.last, 'twoFingerScrollEnd');
+
+        container.dispose();
+      });
+
+      testWidgets('two-finger lift without movement emits no scroll start', (tester) async {
+        final container = _createContainer(const AppSettings(showTouchGlow: false));
+
+        await container.read(settingsProvider.future);
+        container.listen(touchpadControllerProvider, (_, _) {});
+        await tester.pump();
+
+        final controller = container.read(touchpadControllerProvider.notifier);
+        final api = container.read(desktopModeApiProvider) as _FakeDesktopModeApi;
+
+        controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+        controller.handlePointerDown(2, const Offset(140, 100), const Duration(milliseconds: 50));
+        controller.handlePointerUp(1, const Duration(milliseconds: 150));
+        controller.handlePointerUp(2, const Duration(milliseconds: 150));
+        await tester.pump();
+
+        expect(api.calls.where((c) => c == 'twoFingerScrollStart'), isEmpty);
+        expect(api.calls.where((c) => c == 'twoFingerScrollEnd'), isEmpty);
+        expect(api.calls.where((c) => c.startsWith('twoFingerSwipe')), isEmpty);
+
+        container.dispose();
+      });
+
+      testWidgets('quick two-finger slide emits swipe, not scroll', (tester) async {
+        final container = _createContainer(const AppSettings(showTouchGlow: false));
+
+        await container.read(settingsProvider.future);
+        container.listen(touchpadControllerProvider, (_, _) {});
+        await tester.pump();
+
+        final controller = container.read(touchpadControllerProvider.notifier);
+        final api = container.read(desktopModeApiProvider) as _FakeDesktopModeApi;
+
+        controller.handlePointerDown(1, const Offset(100, 100), Duration.zero);
+        controller.handlePointerDown(2, const Offset(140, 100), const Duration(milliseconds: 50));
+
+        // 素早く右へ 50px 移動: 20ms で重心移動 25px = 1.25 px/ms >= 閾値
+        controller.handlePointerMove(1, const Offset(150, 100), const Duration(milliseconds: 70));
+        controller.handlePointerMove(2, const Offset(190, 100), const Duration(milliseconds: 70));
+
+        controller.handlePointerUp(1, const Duration(milliseconds: 80));
+        controller.handlePointerUp(2, const Duration(milliseconds: 80));
+        await tester.pump();
+
+        expect(api.calls.where((c) => c == 'twoFingerScrollStart'), isEmpty);
+        expect(api.calls.where((c) => c.startsWith('twoFingerSwipe')), isNotEmpty);
+        expect(api.calls.last, startsWith('twoFingerSwipe'));
+
+        container.dispose();
+      });
     });
   });
 }

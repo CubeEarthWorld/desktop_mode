@@ -42,7 +42,7 @@ void main() {
 
       expect(restored.autoStart, true);
       expect(restored.pointerSpeed, 1.8);
-      expect(restored.longPressDurationMs, 550);
+      expect(restored.longPressDurationMs, 450);
       expect(restored.preferredDisplayId, isNull);
     });
 

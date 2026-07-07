@@ -26,13 +26,17 @@ abstract interface class DesktopModeApi {
   Future<void> pointerMove(double dx, double dy);
   Future<void> pointerUp();
 
-  /// 2本指スワイプの開始。常に2点を同じ量だけ動かして転送するため、
-  /// 外部ディスプレイ側でピンチと解釈されることはない(常にスワイプ/スクロール)。
-  Future<void> twoFingerMoveStart();
+  /// 2本指スクロールの開始。常に2点を同じ量だけ動かして転送するため、
+  /// 外部ディスプレイ側でピンチと解釈されることはない。
+  Future<void> twoFingerScrollStart();
 
-  /// 2本指スワイプの今フレーム分のデルタ(2点とも同じ量だけ動かす)。
-  Future<void> twoFingerMoveBy(double dx, double dy);
-  Future<void> twoFingerMoveEnd();
+  /// 2本指スクロールの今フレーム分のデルタ(2点とも同じ量だけ動かす)。
+  Future<void> twoFingerScrollBy(double dx, double dy);
+  Future<void> twoFingerScrollEnd();
+
+  /// 2本指の素早いスワイプ（フリック）。
+  /// [dx]/[dy] はスワイプ方向を表す。
+  Future<void> twoFingerSwipe(double dx, double dy);
 
   Future<bool> systemAction(String action);
   Future<void> updateConfig({

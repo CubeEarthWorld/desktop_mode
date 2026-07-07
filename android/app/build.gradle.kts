@@ -15,12 +15,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "dev.mosim.desktop_mode"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // Android 16 (API 36) 以降のみ対応: connected displays / desktop windowing 前提
+        minSdk = 36
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

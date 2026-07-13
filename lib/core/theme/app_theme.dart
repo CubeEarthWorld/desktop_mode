@@ -25,8 +25,9 @@ ThemeData buildAppTheme() {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (states) =>
-            states.contains(WidgetState.selected) ? AppColors.accent : AppColors.foreground,
+        (states) => states.contains(WidgetState.selected)
+            ? AppColors.accent
+            : AppColors.foreground,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
@@ -44,6 +45,8 @@ ThemeData buildAppTheme() {
       foregroundColor: AppColors.foreground,
       elevation: 0,
     ),
-    dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF0A0A0A)),
+    dialogTheme: const DialogThemeData(
+      backgroundColor: AppColors.surfaceElevated,
+    ),
   );
 }

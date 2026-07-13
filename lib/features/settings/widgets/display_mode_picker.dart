@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/platform/desktop_mode_channel.dart';
+import '../../../core/platform/external_touchpad_channel.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimens.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/display_mode_info.dart';
 
 /// 接続先ディスプレイの解像度/リフレッシュレート選択。
@@ -26,7 +27,8 @@ class DisplayModePicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final api = ref.read(desktopModeApiProvider);
+    final api = ref.read(externalTouchpadApiProvider);
+    final l10n = context.l10n;
     return FutureBuilder<List<DisplayModeInfo>>(
       future: api.getSupportedDisplayModes(displayId),
       builder: (context, snapshot) {
@@ -38,13 +40,14 @@ class DisplayModePicker extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('外部ディスプレイの解像度', style: TextStyle(color: AppColors.foreground)),
+            Text(
+              l10n.displayModeLabel,
+              style: const TextStyle(color: AppColors.foreground),
+            ),
             const SizedBox(height: 4),
-            const Text(
-              '接続機器が対応する解像度/リフレッシュレートから選択します。'
-              '未選択の場合は端末の既定モードのまま動作します。'
-              'カーソル表示がオフの場合、この設定は反映されません。',
-              style: TextStyle(color: AppColors.disabled, fontSize: 12),
+            Text(
+              l10n.displayModeDescription,
+              style: const TextStyle(color: AppColors.disabled, fontSize: 12),
             ),
             const SizedBox(height: AppDimens.spacingSmall),
             if (!snapshot.hasData)
@@ -57,18 +60,21 @@ class DisplayModePicker extends ConsumerWidget {
                 ),
               )
             else if (modes.length <= 1)
-              const Text(
-                'この接続機器は複数の解像度に対応していません。',
-                style: TextStyle(color: AppColors.disabled, fontSize: 12),
+              Text(
+                l10n.displayModeSingle,
+                style: const TextStyle(color: AppColors.disabled, fontSize: 12),
               )
             else
               DropdownButton<int?>(
                 value: validSelection,
-                dropdownColor: const Color(0xFF0A0A0A),
+                dropdownColor: AppColors.surfaceElevated,
                 isExpanded: true,
                 onChanged: onChanged,
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('既定')),
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(l10n.displayModeDefault),
+                  ),
                   for (final mode in modes)
                     DropdownMenuItem(
                       value: mode.modeId,

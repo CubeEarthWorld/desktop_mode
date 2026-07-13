@@ -1,8 +1,10 @@
-name: desktop_mode
-description: "A new Flutter project."
+name: external_touchpad
+description: "Turn your phone into a touchpad for an external display."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+repository: https://github.com/CubeEarthWorld/external-display-touchpad
+issue_tracker: https://github.com/CubeEarthWorld/external-display-touchpad/issues
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -24,6 +26,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   flutter_riverpod: ^3.3.2
   go_router: ^17.3.0
@@ -42,12 +47,23 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "asetts/external_display_touchpad_icon.png"
+  min_sdk_android: 36
+  adaptive_icon_background: "#05070B"
+  adaptive_icon_foreground: "asetts/external_display_touchpad_icon.png"
+  adaptive_icon_foreground_inset: 16
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

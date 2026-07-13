@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../core/platform/desktop_mode_channel.dart';
+import '../../core/platform/external_touchpad_channel.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
+import '../../l10n/l10n.dart';
 import '../../models/diagnostics_info.dart';
 
 class _DeviceSummary {
@@ -52,21 +53,24 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
   void initState() {
     super.initState();
     _deviceSummary = _loadDeviceSummary();
-    _diagnostics = ref.read(desktopModeApiProvider).getDiagnostics();
+    _diagnostics = ref.read(externalTouchpadApiProvider).getDiagnostics();
   }
 
   void _refresh() {
     setState(() {
-      _diagnostics = ref.read(desktopModeApiProvider).getDiagnostics();
+      _diagnostics = ref.read(externalTouchpadApiProvider).getDiagnostics();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('診断'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh)],
+        title: Text(l10n.diagnosticsTitle),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppDimens.screenPadding),
@@ -75,18 +79,32 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
             future: _deviceSummary,
             builder: (context, snapshot) {
               final device = snapshot.data;
-              if (device == null) return const _Row(label: '端末', value: '読み込み中…');
+              if (device == null) {
+                return _Row(
+                  label: l10n.deviceLabel,
+                  value: l10n.loadingEllipsis,
+                );
+              }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Row(label: 'Android バージョン', value: '${device.androidRelease} (API ${device.sdkInt})'),
-                  _Row(label: 'メーカー / モデル', value: '${device.manufacturer} / ${device.model}'),
-                  _Row(label: 'アプリバージョン', value: device.appVersion),
+                  _Row(
+                    label: l10n.androidVersionLabel,
+                    value: '${device.androidRelease} (API ${device.sdkInt})',
+                  ),
+                  _Row(
+                    label: l10n.manufacturerModelLabel,
+                    value: '${device.manufacturer} / ${device.model}',
+                  ),
+                  _Row(label: l10n.appVersionLabel, value: device.appVersion),
                 ],
               );
             },
           ),
-          const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
+          const Divider(
+            color: AppColors.divider,
+            height: AppDimens.spacingLarge * 2,
+          ),
           FutureBuilder<DiagnosticsInfo>(
             future: _diagnostics,
             builder: (context, snapshot) {
@@ -96,7 +114,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               final diagnostics = snapshot.data;
               if (diagnostics == null) {
                 return Text(
-                  '取得に失敗しました: ${snapshot.error}',
+                  l10n.diagnosticsFetchFailed('${snapshot.error}'),
                   style: const TextStyle(color: AppColors.foreground),
                 );
               }
@@ -105,15 +123,21 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                 children: [
                   _Row(
                     label: 'Accessibility',
-                    value: diagnostics.accessibilityEnabled ? '有効' : '無効',
+                    value: diagnostics.accessibilityEnabled
+                        ? l10n.statusEnabled
+                        : l10n.statusDisabled,
                   ),
                   _Row(
                     label: 'Secondary Display Feature',
-                    value: diagnostics.hasSecondaryDisplayFeature ? 'あり' : 'なし',
+                    value: diagnostics.hasSecondaryDisplayFeature
+                        ? l10n.statusPresent
+                        : l10n.statusAbsent,
                   ),
                   _Row(
                     label: 'Target Display ID',
-                    value: diagnostics.targetDisplayId?.toString() ?? '未設定',
+                    value:
+                        diagnostics.targetDisplayId?.toString() ??
+                        l10n.statusNotSet,
                   ),
                   _Row(
                     label: 'Display Bounds',
@@ -121,15 +145,50 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                         ? '-'
                         : '${diagnostics.displayBounds!.width}×${diagnostics.displayBounds!.height}',
                   ),
-                  _Row(label: 'Overlay Active', value: diagnostics.overlayActive ? 'はい' : 'いいえ'),
-                  _Row(label: 'Last Gesture Result', value: diagnostics.lastGestureResult),
-                  _Row(label: 'Last Error', value: diagnostics.lastError ?? 'なし'),
+                  _Row(
+                    label: 'Overlay Active',
+                    value: diagnostics.overlayActive
+                        ? l10n.statusYes
+                        : l10n.statusNo,
+                  ),
+                  _Row(
+                    label: 'Last Gesture Result',
+                    value: diagnostics.lastGestureResult,
+                  ),
+                  _Row(label: 'Input Phase', value: diagnostics.inputPhase),
+                  _Row(
+                    label: 'Input Session ID',
+                    value: diagnostics.inputSessionId?.toString() ?? '-',
+                  ),
+                  _Row(
+                    label: 'Native Gesture',
+                    value: diagnostics.activeGestureId == null
+                        ? '-'
+                        : '${diagnostics.activeGestureKind ?? 'unknown'} #${diagnostics.activeGestureId}',
+                  ),
+                  _Row(
+                    label: 'Cancellation',
+                    value: diagnostics.lastCancellationReason ?? '-',
+                  ),
+                  _Row(
+                    label: 'Launch Bounds',
+                    value: diagnostics.launchBoundsWarning ?? 'OK',
+                  ),
+                  _Row(
+                    label: 'Last Error',
+                    value: diagnostics.lastError ?? l10n.statusNone,
+                  ),
                   const SizedBox(height: AppDimens.spacingMedium),
-                  const Text('接続 Display 一覧', style: TextStyle(color: AppColors.accent)),
+                  Text(
+                    l10n.connectedDisplaysLabel,
+                    style: const TextStyle(color: AppColors.accent),
+                  ),
                   for (final display in diagnostics.displays)
                     _Row(
-                      label: '#${display.id}${display.isDefault ? ' (default)' : ''}',
-                      value: '${display.name}  ${display.widthPx}×${display.heightPx}',
+                      label:
+                          '#${display.id}${display.isDefault ? ' (default)' : ''}',
+                      value:
+                          '${display.name}  ${display.widthPx}×${display.heightPx}',
                     ),
                 ],
               );
@@ -156,10 +215,16 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 160,
-            child: Text(label, style: const TextStyle(color: AppColors.disabled, fontSize: 12)),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.disabled, fontSize: 12),
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: AppColors.foreground)),
+            child: Text(
+              value,
+              style: const TextStyle(color: AppColors.foreground),
+            ),
           ),
         ],
       ),

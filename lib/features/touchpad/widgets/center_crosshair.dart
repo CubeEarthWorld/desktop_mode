@@ -29,8 +29,16 @@ class _CrosshairPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    canvas.drawLine(Offset(0, center.dy), Offset(size.width, center.dy), _paint);
-    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), _paint);
+    canvas.drawLine(
+      Offset(0, center.dy),
+      Offset(size.width, center.dy),
+      _paint,
+    );
+    canvas.drawLine(
+      Offset(center.dx, 0),
+      Offset(center.dx, size.height),
+      _paint,
+    );
   }
 
   @override

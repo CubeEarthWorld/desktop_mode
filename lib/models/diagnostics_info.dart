@@ -36,6 +36,12 @@ class DiagnosticsInfo {
     required this.overlayActive,
     required this.lastGestureResult,
     required this.lastError,
+    this.inputPhase = 'idle',
+    this.inputSessionId,
+    this.activeGestureId,
+    this.activeGestureKind,
+    this.lastCancellationReason,
+    this.launchBoundsWarning,
   });
 
   factory DiagnosticsInfo.fromMap(Map<Object?, Object?> map) => DiagnosticsInfo(
@@ -47,10 +53,17 @@ class DiagnosticsInfo {
     displayBounds: map['displayBounds'] == null
         ? null
         : DisplayBounds.fromMap(map['displayBounds']! as Map<Object?, Object?>),
-    hasSecondaryDisplayFeature: map['hasSecondaryDisplayFeature'] as bool? ?? false,
+    hasSecondaryDisplayFeature:
+        map['hasSecondaryDisplayFeature'] as bool? ?? false,
     overlayActive: map['overlayActive'] as bool? ?? false,
     lastGestureResult: map['lastGestureResult'] as String? ?? 'none',
     lastError: map['lastError'] as String?,
+    inputPhase: map['inputPhase'] as String? ?? 'idle',
+    inputSessionId: map['inputSessionId'] as int?,
+    activeGestureId: map['activeGestureId'] as int?,
+    activeGestureKind: map['activeGestureKind'] as String?,
+    lastCancellationReason: map['lastCancellationReason'] as String?,
+    launchBoundsWarning: map['launchBoundsWarning'] as String?,
   );
 
   final bool accessibilityEnabled;
@@ -61,4 +74,10 @@ class DiagnosticsInfo {
   final bool overlayActive;
   final String lastGestureResult;
   final String? lastError;
+  final String inputPhase;
+  final int? inputSessionId;
+  final int? activeGestureId;
+  final String? activeGestureKind;
+  final String? lastCancellationReason;
+  final String? launchBoundsWarning;
 }

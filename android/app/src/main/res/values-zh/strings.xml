@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">外接显示器触控板</string>
+    <string name="monitor_notification_channel_name">外接显示器监控</string>
+    <string name="monitor_notification_text">点按打开触控板</string>
+    <string name="accessibility_service_label">外接显示器触控板</string>
+    <string name="accessibility_service_description">根据您的触控板操作，代为在外接显示器上执行点按、长按、拖动和滚动，并读取外接显示器上的窗口信息以保持所启动应用的窗口尺寸正确。不会收集或共享任何数据。</string>
+</resources>

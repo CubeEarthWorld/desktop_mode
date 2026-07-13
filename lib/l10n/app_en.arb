@@ -1,0 +1,125 @@
+{
+  "@@locale": "en",
+  "appTitle": "External Display Touchpad",
+  "@appTitle": {
+    "description": "Application title shown in the task switcher"
+  },
+  "displayDisconnected": "External display disconnected",
+  "@displayDisconnected": {
+    "description": "Snackbar shown when the external display is unplugged"
+  },
+  "sessionEndedUnexpectedly": "The session ended unexpectedly ({reason})",
+  "@sessionEndedUnexpectedly": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTooltip": "Settings",
+  "diagnosticsTooltip": "Diagnostics",
+  "accessibilityStatusLabel": "Accessibility",
+  "statusEnabled": "Enabled",
+  "statusDisabledRequired": "Disabled (required for input)",
+  "openAccessibilitySettings": "Open accessibility settings",
+  "externalDisplayLabel": "External display",
+  "displayConnectedValue": "{displays} (tap to change resolution)",
+  "@displayConnectedValue": {
+    "placeholders": {
+      "displays": {
+        "type": "String"
+      }
+    }
+  },
+  "displayNotConnected": "Not connected",
+  "openTouchpad": "Open touchpad",
+  "sideloadHint": "If the accessibility setting is greyed out for a sideloaded app, enable \"Allow restricted settings\" from the app info screen.",
+  "settingsTitle": "Settings",
+  "settingsLoadFailed": "Failed to load settings: {error}",
+  "@settingsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionStartup": "Startup",
+  "autoStartLabel": "Auto start",
+  "autoStartDescription": "Open the touchpad screen automatically when an external display is connected",
+  "residentMonitoringLabel": "Background monitoring",
+  "residentMonitoringDescription": "Keep watching for external display connections even when the app is closed",
+  "sectionDisplay": "Display",
+  "showCursorLabel": "External cursor",
+  "showCursorDescription": "Show a virtual cursor on the external display",
+  "touchGlowLabel": "Action feedback effect",
+  "touchGlowDescription": "Show a brief effect only when a click or long press is committed",
+  "sectionInput": "Input",
+  "pointerSpeedLabel": "Pointer speed",
+  "longPressDurationLabel": "Long-press / drag start time",
+  "cursorIdleTimeoutLabel": "Cursor auto-hide time",
+  "cursorIdleOff": "OFF",
+  "secondsValue": "{seconds}s",
+  "@secondsValue": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "targetDisplayLabel": "Target display",
+  "targetDisplayAuto": "Auto (largest external display)",
+  "homeAppLabel": "Home app for the external display",
+  "homeAppDescription": "App launched when opening Home via the home button or back navigation. If the default launcher does not support landscape screens, you can pick another launcher.",
+  "systemDefault": "System default",
+  "displayModeLabel": "External display resolution",
+  "displayModeDescription": "Choose from the resolutions/refresh rates supported by the connected device. When unset, the device default mode is used. This setting has no effect while the cursor is hidden.",
+  "displayModeSingle": "This device does not support multiple resolutions.",
+  "displayModeDefault": "Default",
+  "sectionProtection": "Accident prevention & screen protection",
+  "touchLockLabel": "Touch lock",
+  "touchLockDescription": "Prevent accidental input; hold for 1 second to unlock",
+  "touchLockTimeoutLabel": "Lock after inactivity",
+  "minimizeBrightnessWhileLockedLabel": "Minimize brightness while locked",
+  "minimizeBrightnessWhileLockedDescription": "Use the lowest screen brightness during touch lock and restore it after unlocking",
+  "lockNowTooltip": "Lock now",
+  "oledProtectionLabel": "OLED display protection",
+  "oledProtectionDescription": "Slightly shift the UI, including the lock screen, every few minutes",
+  "sectionHowTo": "How to use",
+  "howToText": "Move: move one finger to move the cursor\n\nClick: tap with one finger and release quickly without moving\n\nLong press: hold one finger still for a while, then release without moving (Android mice have no right click, so use this long press as the right-click substitute)\n\nDrag: hold one finger still for the long-press start time, then move it without lifting to start dragging. Lift the finger to finish\n\nScroll: move two fingers to forward a continuous swipe to the external display. Move slowly to scroll, release quickly to fling\n\nBottom nav \"Back\": sends an edge swipe to the external display. It may not respond if the app/launcher on the external display does not recognize gesture navigation (Android has no official way to send \"Back\" to a specific display)\n\nBottom nav \"Home\": launches the configured home app (or the system default) on the external display\n\nBottom nav \"Apps\": opens the list of installed apps and launches the selected app on the external display",
+  "openDiagnostics": "Open diagnostics",
+  "diagnosticsTitle": "Diagnostics",
+  "deviceLabel": "Device",
+  "loadingEllipsis": "Loading…",
+  "androidVersionLabel": "Android version",
+  "manufacturerModelLabel": "Manufacturer / model",
+  "appVersionLabel": "App version",
+  "diagnosticsFetchFailed": "Failed to fetch: {error}",
+  "@diagnosticsFetchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "statusDisabled": "Disabled",
+  "statusPresent": "Yes",
+  "statusAbsent": "No",
+  "statusNotSet": "Not set",
+  "statusYes": "Yes",
+  "statusNo": "No",
+  "statusNone": "None",
+  "connectedDisplaysLabel": "Connected displays",
+  "appListTitle": "Apps",
+  "searchHint": "Search",
+  "reloadAppList": "Reload app list",
+  "noMatchingApps": "No matching apps",
+  "windowModeTooltip": "Window aspect ratio at launch",
+  "windowModeAuto": "Auto",
+  "windowModePhonePortrait": "Phone portrait",
+  "windowModePhoneLandscape": "Phone landscape",
+  "windowModeFullExternal": "Full external screen",
+  "unlockByLongPress": "Hold to unlock",
+  "sectionAbout": "About",
+  "openSourceLicenses": "Open-source licenses",
+  "openSourceLicensesDescription": "License notices for open-source software used in this app"
+}

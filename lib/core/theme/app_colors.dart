@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 /// カラートークンの唯一の定義箇所(仕様 §8.1)。他のファイルは値を直接書かずここを参照する。
 abstract final class AppColors {
   static const background = Color(0xFF000000);
+  // モーダルシート/ダイアログ/ドロップダウンの背景。背景よりわずかに明るい面。
+  static const surfaceElevated = Color(0xFF0A0A0A);
   static const foreground = Color(0xFF9E9E9E);
   static const foregroundPressed = Color(0xFFD0D0D0);
   static const disabled = Color(0xFF4A4A4A);

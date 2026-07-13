@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">外部ディスプレイ用タッチパッド</string>
+    <string name="monitor_notification_channel_name">外部ディスプレイ監視</string>
+    <string name="monitor_notification_text">タップしてタッチパッドを開く</string>
+    <string name="accessibility_service_label">外部ディスプレイ用タッチパッド</string>
+    <string name="accessibility_service_description">タッチパッド操作に応じて、外部ディスプレイ上でタップ・長押し・ドラッグ・スクロールを代行します。また、起動したアプリのウィンドウサイズを正しく保つために、外部ディスプレイ上のウィンドウ情報を読み取ります。データの収集や共有は行いません。</string>
+</resources>

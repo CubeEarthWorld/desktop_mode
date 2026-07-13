@@ -3,10 +3,10 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/desktop_mode_event.dart';
+import '../../models/external_touchpad_event.dart';
 import '../../models/display_info.dart';
 import '../../models/session_state.dart';
-import 'desktop_mode_channel.dart';
+import 'external_touchpad_channel.dart';
 
 /// アプリ全体で共有する状態(Accessibility/外部ディスプレイ/セッション)。
 class AppStatus {
@@ -20,7 +20,8 @@ class AppStatus {
   final List<DisplayInfo> displays;
   final SessionState sessionState;
 
-  List<DisplayInfo> get externalDisplays => displays.where((d) => !d.isDefault).toList();
+  List<DisplayInfo> get externalDisplays =>
+      displays.where((d) => !d.isDefault).toList();
   bool get hasExternalDisplay => externalDisplays.isNotEmpty;
   bool get canOpenTouchpad => accessibilityEnabled && hasExternalDisplay;
 
@@ -41,10 +42,11 @@ final appStatusProvider = NotifierProvider<AppStatusController, AppStatus>(
 
 /// Accessibility/外部ディスプレイ/セッション状態の唯一の情報源。
 /// native からの push イベント(仕様 R10)を購読して更新し、ポーリングは行わない。
-class AppStatusController extends Notifier<AppStatus> with WidgetsBindingObserver {
+class AppStatusController extends Notifier<AppStatus>
+    with WidgetsBindingObserver {
   @override
   AppStatus build() {
-    ref.listen(desktopModeEventsProvider, (previous, next) {
+    ref.listen(externalTouchpadEventsProvider, (previous, next) {
       next.whenData(_handleEvent);
     });
     WidgetsBinding.instance.addObserver(this);
@@ -64,7 +66,7 @@ class AppStatusController extends Notifier<AppStatus> with WidgetsBindingObserve
   }
 
   Future<void> _refresh() async {
-    final api = ref.read(desktopModeApiProvider);
+    final api = ref.read(externalTouchpadApiProvider);
     final accessibilityEnabled = await api.isAccessibilityEnabled();
     final displays = await api.getDisplays();
     final sessionState = await api.getSessionState();
@@ -76,11 +78,11 @@ class AppStatusController extends Notifier<AppStatus> with WidgetsBindingObserve
   }
 
   Future<void> _refreshDisplaysOnly() async {
-    final displays = await ref.read(desktopModeApiProvider).getDisplays();
+    final displays = await ref.read(externalTouchpadApiProvider).getDisplays();
     state = state.copyWith(displays: displays);
   }
 
-  void _handleEvent(DesktopModeEvent event) {
+  void _handleEvent(ExternalTouchpadEvent event) {
     switch (event) {
       case DisplayAddedEvent():
       case DisplayRemovedEvent():

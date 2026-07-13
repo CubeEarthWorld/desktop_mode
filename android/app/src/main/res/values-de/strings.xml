@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Touchpad für externes Display</string>
+    <string name="monitor_notification_channel_name">Überwachung des externen Displays</string>
+    <string name="monitor_notification_text">Zum Öffnen des Touchpads tippen</string>
+    <string name="accessibility_service_label">Touchpad für externes Display</string>
+    <string name="accessibility_service_description">Führt entsprechend deiner Touchpad-Eingaben Tippen, langes Drücken, Ziehen und Scrollen auf dem externen Display aus und liest Fensterinformationen des externen Displays, um die Fenstergröße gestarteter Apps korrekt zu halten. Es werden keine Daten erfasst oder weitergegeben.</string>
+</resources>

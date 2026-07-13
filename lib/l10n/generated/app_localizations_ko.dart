@@ -1,0 +1,268 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Korean (`ko`).
+class AppLocalizationsKo extends AppLocalizations {
+  AppLocalizationsKo([String locale = 'ko']) : super(locale);
+
+  @override
+  String get appTitle => '외부 디스플레이 터치패드';
+
+  @override
+  String get displayDisconnected => '외부 디스플레이 연결이 끊어졌습니다';
+
+  @override
+  String sessionEndedUnexpectedly(String reason) {
+    return '세션이 예기치 않게 종료되었습니다 ($reason)';
+  }
+
+  @override
+  String get settingsTooltip => '설정';
+
+  @override
+  String get diagnosticsTooltip => '진단';
+
+  @override
+  String get accessibilityStatusLabel => '접근성';
+
+  @override
+  String get statusEnabled => '사용';
+
+  @override
+  String get statusDisabledRequired => '사용 안 함(조작에 필요합니다)';
+
+  @override
+  String get openAccessibilitySettings => '접근성 설정 열기';
+
+  @override
+  String get externalDisplayLabel => '외부 디스플레이';
+
+  @override
+  String displayConnectedValue(String displays) {
+    return '$displays(탭하여 해상도 변경)';
+  }
+
+  @override
+  String get displayNotConnected => '연결되지 않음';
+
+  @override
+  String get openTouchpad => '터치패드 열기';
+
+  @override
+  String get sideloadHint =>
+      '사이드로드 시 접근성 설정이 비활성화되어 있으면 앱 정보에서 「제한된 설정 허용」을 사용 설정하세요.';
+
+  @override
+  String get settingsTitle => '설정';
+
+  @override
+  String settingsLoadFailed(String error) {
+    return '설정을 불러오지 못했습니다: $error';
+  }
+
+  @override
+  String get sectionStartup => '시작';
+
+  @override
+  String get autoStartLabel => '자동 시작';
+
+  @override
+  String get autoStartDescription => '외부 디스플레이 연결 시 터치패드 화면을 자동으로 엽니다';
+
+  @override
+  String get residentMonitoringLabel => '상주 모니터링';
+
+  @override
+  String get residentMonitoringDescription => '앱을 닫아도 외부 디스플레이 연결을 계속 감시합니다';
+
+  @override
+  String get sectionDisplay => '표시';
+
+  @override
+  String get showCursorLabel => '외부 커서 표시';
+
+  @override
+  String get showCursorDescription => '외부 디스플레이에 가상 커서를 표시합니다';
+
+  @override
+  String get touchGlowLabel => '조작 확정 효과';
+
+  @override
+  String get touchGlowDescription => '클릭 또는 길게 누르기가 확정된 순간에만 표시합니다';
+
+  @override
+  String get sectionInput => '조작';
+
+  @override
+  String get pointerSpeedLabel => '포인터 속도';
+
+  @override
+  String get longPressDurationLabel => '길게 누르기/드래그 시작 시간';
+
+  @override
+  String get cursorIdleTimeoutLabel => '커서 자동 숨김 시간';
+
+  @override
+  String get cursorIdleOff => '끄기';
+
+  @override
+  String secondsValue(String seconds) {
+    return '$seconds초';
+  }
+
+  @override
+  String get targetDisplayLabel => '대상 디스플레이';
+
+  @override
+  String get targetDisplayAuto => '자동(가장 큰 외부 디스플레이)';
+
+  @override
+  String get homeAppLabel => '외부 디스플레이의 홈 앱';
+
+  @override
+  String get homeAppDescription =>
+      '홈 버튼이나 뒤로 가기 조작으로 홈을 열 때 실행되는 앱입니다. 기본 런처가 가로 화면을 지원하지 않는 경우 다른 런처를 지정할 수 있습니다.';
+
+  @override
+  String get systemDefault => '시스템 기본값';
+
+  @override
+  String get displayModeLabel => '외부 디스플레이 해상도';
+
+  @override
+  String get displayModeDescription =>
+      '연결된 기기가 지원하는 해상도/재생률에서 선택합니다. 선택하지 않으면 기기의 기본 모드로 동작합니다. 커서 표시가 꺼져 있으면 이 설정은 적용되지 않습니다.';
+
+  @override
+  String get displayModeSingle => '이 기기는 여러 해상도를 지원하지 않습니다.';
+
+  @override
+  String get displayModeDefault => '기본값';
+
+  @override
+  String get sectionProtection => '오조작 방지·화면 보호';
+
+  @override
+  String get touchLockLabel => '터치 잠금';
+
+  @override
+  String get touchLockDescription => '오조작을 방지하며, 1초 길게 눌러 해제합니다';
+
+  @override
+  String get touchLockTimeoutLabel => '미사용 시 잠금 대기 시간';
+
+  @override
+  String get minimizeBrightnessWhileLockedLabel => '잠금 중 화면 밝기를 최저로 설정';
+
+  @override
+  String get minimizeBrightnessWhileLockedDescription =>
+      '터치 잠금 중에만 화면 밝기를 최저로 낮추고 잠금 해제 후 복원합니다';
+
+  @override
+  String get lockNowTooltip => '지금 잠그기';
+
+  @override
+  String get oledProtectionLabel => 'OLED 디스플레이 보호';
+
+  @override
+  String get oledProtectionDescription => '잠금 화면을 포함한 UI 위치를 몇 분마다 약간 이동합니다';
+
+  @override
+  String get sectionHowTo => '사용 방법';
+
+  @override
+  String get howToText =>
+      '이동: 한 손가락으로 움직이면 커서가 이동합니다\n\n클릭: 한 손가락으로 터치한 후 움직이지 않고 빠르게 떼면 클릭\n\n길게 누르기: 한 손가락을 움직이지 않고 잠시 누른 후, 움직이지 않고 떼기(Android 마우스에는 오른쪽 클릭이 없으므로 오른쪽 클릭 대신 이 길게 누르기를 사용합니다)\n\n드래그: 한 손가락을 움직이지 않고 잠시(길게 누르기 시작 시간) 누른 후, 손가락을 떼지 않고 움직이면 드래그 시작. 손가락을 떼면 드래그 종료\n\n스크롤: 두 손가락을 움직이면 외부 디스플레이로 연속 스와이프로 전달됩니다. 천천히 움직이면 스크롤, 빠르게 떼면 플링이 됩니다\n\n하단 내비 「뒤로」: 외부 디스플레이에 화면 가장자리 스와이프를 보냅니다. 외부 디스플레이의 앱/런처가 제스처 내비게이션을 인식하지 못하면 반응하지 않을 수 있습니다(Android에는 특정 디스플레이로 「뒤로」를 보내는 공식 수단이 없기 때문입니다)\n\n하단 내비 「홈」: 설정한 홈 앱(미설정 시 시스템 기본값)을 외부 디스플레이에서 실행합니다\n\n하단 내비 「앱 목록」: 설치된 앱 목록을 열고 선택한 앱을 외부 디스플레이에서 실행합니다';
+
+  @override
+  String get openDiagnostics => '진단 화면 열기';
+
+  @override
+  String get diagnosticsTitle => '진단';
+
+  @override
+  String get deviceLabel => '기기';
+
+  @override
+  String get loadingEllipsis => '불러오는 중…';
+
+  @override
+  String get androidVersionLabel => 'Android 버전';
+
+  @override
+  String get manufacturerModelLabel => '제조사 / 모델';
+
+  @override
+  String get appVersionLabel => '앱 버전';
+
+  @override
+  String diagnosticsFetchFailed(String error) {
+    return '가져오지 못했습니다: $error';
+  }
+
+  @override
+  String get statusDisabled => '사용 안 함';
+
+  @override
+  String get statusPresent => '있음';
+
+  @override
+  String get statusAbsent => '없음';
+
+  @override
+  String get statusNotSet => '설정 안 됨';
+
+  @override
+  String get statusYes => '예';
+
+  @override
+  String get statusNo => '아니요';
+
+  @override
+  String get statusNone => '없음';
+
+  @override
+  String get connectedDisplaysLabel => '연결된 디스플레이 목록';
+
+  @override
+  String get appListTitle => '앱 목록';
+
+  @override
+  String get searchHint => '검색';
+
+  @override
+  String get reloadAppList => '앱 목록 다시 불러오기';
+
+  @override
+  String get noMatchingApps => '해당하는 앱이 없습니다';
+
+  @override
+  String get windowModeTooltip => '실행 시 화면 비율';
+
+  @override
+  String get windowModeAuto => '자동';
+
+  @override
+  String get windowModePhonePortrait => '스마트폰 세로';
+
+  @override
+  String get windowModePhoneLandscape => '스마트폰 가로';
+
+  @override
+  String get windowModeFullExternal => '외부 화면 전체';
+
+  @override
+  String get unlockByLongPress => '길게 눌러 잠금 해제';
+
+  @override
+  String get sectionAbout => '앱 정보';
+
+  @override
+  String get openSourceLicenses => '오픈 소스 라이선스';
+
+  @override
+  String get openSourceLicensesDescription => '이 앱에서 사용하는 오픈 소스 소프트웨어의 라이선스 정보';
+}

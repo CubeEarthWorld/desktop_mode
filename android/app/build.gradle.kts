@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.mosim.desktop_mode"
+    namespace = "com.xignal.external_touchpad"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.mosim.desktop_mode"
+        applicationId = "com.xignal.external_touchpad"
         // Android 16 (API 36) 以降のみ対応: connected displays / desktop windowing 前提
         minSdk = 36
         targetSdk = 36
@@ -40,4 +40,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
 }

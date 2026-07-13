@@ -5,147 +5,166 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/platform/desktop_mode_channel.dart';
+import '../../core/platform/external_touchpad_api.dart';
+import '../../core/platform/external_touchpad_channel.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/settings/settings_provider.dart';
+import '../../core/theme/app_dimens.dart';
 import 'touchpad_gesture_recognizer.dart';
 
-/// ジェスチャ注入の失敗(busy 等)は native 側の直列化ガードによる正常な却下であり、
-/// 未捕捉例外としてログを汚す必要はない。ここで一括して捕捉し、診断用に一行だけ残す。
-void _fireAndForget(String label, Future<void> Function() action) {
-  unawaited(
-    action().catchError((Object error) {
-      if (error is PlatformException) {
-        debugPrint('[Touchpad] $label failed: ${error.code} ${error.message ?? ''}');
-      } else {
-        debugPrint('[Touchpad] $label failed: $error');
-      }
-    }),
-  );
-}
+const _unlockHoldDuration = Duration(milliseconds: AppDimens.touchLockHoldMs);
+const _glowFadeDuration = Duration(milliseconds: AppDimens.touchGlowFadeOutMs);
+const _platformCommandTimeout = Duration(seconds: 4);
 
-const _idleLockDelay = Duration(seconds: 30);
-const _unlockHoldDuration = Duration(milliseconds: 2000);
-const _glowFadeDuration = Duration(milliseconds: 300);
-
-/// フェードアウト中のタッチ発光。`pointerId` ではなく単調増加 id で管理し、
-/// 指を離した直後に同じ pointerId が再利用されても取り違えない。
 class FadingGlow {
   const FadingGlow(this.id, this.position);
+
   final int id;
   final Offset position;
 }
 
 class TouchpadState {
   const TouchpadState({
-    this.activeTouches = const {},
     this.fadingGlows = const [],
     this.locked = false,
     this.unlockHoldProgress = 0,
+    this.phase = TouchpadPhase.idle,
+    this.gestureSessionId,
   });
 
-  final Map<int, Offset> activeTouches;
   final List<FadingGlow> fadingGlows;
   final bool locked;
   final double unlockHoldProgress;
+  final TouchpadPhase phase;
+  final int? gestureSessionId;
 
   TouchpadState copyWith({
-    Map<int, Offset>? activeTouches,
     List<FadingGlow>? fadingGlows,
     bool? locked,
     double? unlockHoldProgress,
+    TouchpadPhase? phase,
+    int? gestureSessionId,
+    bool clearGestureSessionId = false,
   }) => TouchpadState(
-    activeTouches: activeTouches ?? this.activeTouches,
     fadingGlows: fadingGlows ?? this.fadingGlows,
     locked: locked ?? this.locked,
     unlockHoldProgress: unlockHoldProgress ?? this.unlockHoldProgress,
+    phase: phase ?? this.phase,
+    gestureSessionId: clearGestureSessionId
+        ? null
+        : (gestureSessionId ?? this.gestureSessionId),
   );
 }
 
-final touchpadControllerProvider = NotifierProvider.autoDispose<TouchpadController, TouchpadState>(
-  TouchpadController.new,
-);
+final touchpadControllerProvider =
+    NotifierProvider.autoDispose<TouchpadController, TouchpadState>(
+      TouchpadController.new,
+    );
 
-/// タッチパッド画面の実行時状態(ジェスチャ・タッチ発光・誤操作ロック)を束ねる。
-/// 認識は [TouchpadGestureRecognizer] に、native 呼び出しは [DesktopModeApi] に委譲する(SRP)。
 class TouchpadController extends Notifier<TouchpadState> {
-  TouchpadGestureRecognizer _recognizer = TouchpadGestureRecognizer();
+  final TouchpadGestureRecognizer _recognizer = TouchpadGestureRecognizer();
+  late ExternalTouchpadApi _api;
   AppSettings _settings = const AppSettings();
 
-  double _pendingDx = 0;
-  double _pendingDy = 0;
-  double _pendingDragDx = 0;
-  double _pendingDragDy = 0;
-  double _pendingSwipeDx = 0;
-  double _pendingSwipeDy = 0;
+  double _pendingCursorDx = 0;
+  double _pendingCursorDy = 0;
+  int? _pendingContinuousId;
+  ContinuousGestureKind? _pendingContinuousKind;
+  double _pendingContinuousDx = 0;
+  double _pendingContinuousDy = 0;
+  int? _activeContinuousId;
+  ContinuousGestureKind? _activeContinuousKind;
   bool _frameScheduled = false;
-  int _nextGlowId = 0;
 
+  Future<void> _commandTail = Future<void>.value();
+  bool _disposed = false;
+
+  int _nextGlowId = 0;
+  final Map<int, Timer> _glowTimers = {};
+  final Map<int, Offset> _touchPositions = {};
   Timer? _idleLockTimer;
   Timer? _unlockHoldTimer;
-  int? _unlockHoldPointerId;
-
-  /// 静止長押しでドラッグ武装するための検知タイマー。認識器は自前の時計を
-  /// 持たない純 Dart クラスのため、実時間の計測はここで行う(§ タッチ操作)。
   Timer? _longPressTimer;
+  int? _unlockHoldPointerId;
+  Offset? _unlockHoldOrigin;
+  String? _publishedPhase;
+  int? _publishedSessionId;
+
+  @visibleForTesting
+  Future<void> get debugPendingCommands => _commandTail;
 
   @override
   TouchpadState build() {
+    _api = ref.read(externalTouchpadApiProvider);
     _settings = ref.read(settingsProvider).value ?? const AppSettings();
     ref.listen(settingsProvider, (previous, next) {
       final settings = next.value;
-      if (settings != null) _settings = settings;
+      if (settings == null) return;
+      final shouldRearmLock =
+          settings.touchLockEnabled != _settings.touchLockEnabled ||
+          settings.touchLockIdleTimeoutSeconds !=
+              _settings.touchLockIdleTimeoutSeconds;
+      _settings = settings;
+      if (shouldRearmLock && !state.locked) _armIdleLockTimer();
     });
     _armIdleLockTimer();
-    ref.onDispose(() {
-      _idleLockTimer?.cancel();
-      _unlockHoldTimer?.cancel();
-      _longPressTimer?.cancel();
-    });
+    ref.onDispose(_dispose);
     return const TouchpadState();
   }
 
   void handlePointerDown(int id, Offset position, Duration timestamp) {
     if (state.locked) {
-      _beginUnlockHold(id);
+      _beginUnlockHold(id, position);
       return;
     }
     _armIdleLockTimer();
-    state = state.copyWith(activeTouches: {...state.activeTouches, id: position});
-    if (_settings.showTouchGlow) {
-      _fireAndForget(
-        'showTouchEffectAtCursor',
-        () => ref.read(desktopModeApiProvider).showTouchEffectAtCursor(),
-      );
-    }
+    _touchPositions[id] = position;
     _applyResults(_recognizer.onPointerDown(id, position, timestamp));
-    _armLongPressTimer(id);
+
+    if (_recognizer.phase == TouchpadPhase.oneFingerPending) {
+      _armLongPressTimer(id, _recognizer.sessionId!);
+    } else {
+      _longPressTimer?.cancel();
+    }
+    if (_recognizer.phase == TouchpadPhase.twoFingerPending) {
+      _discardPendingCursorMove();
+    }
+    _syncRecognizerState();
   }
 
   void handlePointerMove(int id, Offset position, Duration timestamp) {
-    if (state.locked) return;
+    if (state.locked) {
+      // 解除ホールド中に指が動いたら、指を離したときと同じく解除失敗にする。
+      final origin = _unlockHoldOrigin;
+      if (id == _unlockHoldPointerId &&
+          origin != null &&
+          (position - origin).distance > AppDimens.touchLockUnlockMoveSlop) {
+        _cancelUnlockHold(id);
+      }
+      return;
+    }
     _armIdleLockTimer();
-    state = state.copyWith(activeTouches: {...state.activeTouches, id: position});
+    _touchPositions[id] = position;
     _applyResults(_recognizer.onPointerMove(id, position, timestamp));
+    if (_recognizer.phase != TouchpadPhase.oneFingerPending) {
+      _longPressTimer?.cancel();
+    }
+    _syncRecognizerState();
   }
 
-  void handlePointerUp(int id, Duration timestamp) {
+  void handlePointerUp(int id, Offset position, Duration timestamp) {
     if (state.locked) {
       _cancelUnlockHold(id);
       return;
     }
     _armIdleLockTimer();
     _longPressTimer?.cancel();
-    final touches = Map<int, Offset>.from(state.activeTouches);
-    final lastPosition = touches.remove(id);
-    var glows = state.fadingGlows;
-    if (_settings.showTouchGlow && lastPosition != null) {
-      final glowId = _nextGlowId++;
-      glows = [...glows, FadingGlow(glowId, lastPosition)];
-      Timer(_glowFadeDuration, () => _removeGlow(glowId));
-    }
-    state = state.copyWith(activeTouches: touches, fadingGlows: glows);
-    _applyResults(_recognizer.onPointerUp(id, timestamp));
+    _touchPositions.remove(id);
+    _applyResults(
+      _recognizer.onPointerUp(id, position, timestamp),
+      feedbackPosition: position,
+    );
+    _syncRecognizerState();
   }
 
   void handlePointerCancel(int id) {
@@ -154,120 +173,255 @@ class TouchpadController extends Notifier<TouchpadState> {
       return;
     }
     _longPressTimer?.cancel();
-    final touches = Map<int, Offset>.from(state.activeTouches)..remove(id);
-    state = state.copyWith(activeTouches: touches);
-    // システムが途中でジェスチャーを打ち切った場合でも、ドラッグ/2本指スワイプ中で
-    // あれば必ずネイティブ側へ終了を伝える(結果を握り潰すと native の直列化ガードが
-    // 解放されず、以後のあらゆる操作が busy になる不具合の原因になる)。
+    _touchPositions.remove(id);
     _applyResults(_recognizer.onPointerCancel(id));
+    _syncRecognizerState();
   }
 
-  /// 指を動かさずに [AppSettings.longPressDurationMs] だけ静止し続けたら
-  /// ドラッグ武装状態にする(認識器自体は時計を持たないため、実時間の計測はここで行う)。
-  void _armLongPressTimer(int pointerId) {
+  void _armLongPressTimer(int pointerId, int sessionId) {
     _longPressTimer?.cancel();
-    _longPressTimer = Timer(Duration(milliseconds: _settings.longPressDurationMs), () {
-      _applyResults(_recognizer.onLongPressTimeout(pointerId));
-    });
+    _longPressTimer = Timer(
+      Duration(milliseconds: _settings.longPressDurationMs),
+      () {
+        if (_disposed) return;
+        _applyResults(_recognizer.onLongPressTimeout(pointerId, sessionId));
+        _syncRecognizerState();
+      },
+    );
   }
 
-  void _removeGlow(int glowId) {
-    state = state.copyWith(fadingGlows: state.fadingGlows.where((g) => g.id != glowId).toList());
-  }
-
-  void _applyResults(List<TouchpadGestureResult> results) {
-    final api = ref.read(desktopModeApiProvider);
+  void _applyResults(
+    List<TouchpadGestureResult> results, {
+    Offset? feedbackPosition,
+  }) {
     for (final result in results) {
       switch (result) {
         case CursorMoveResult(:final dx, :final dy):
-          _pendingDx += dx;
-          _pendingDy += dy;
+          _pendingCursorDx += dx;
+          _pendingCursorDy += dy;
           _scheduleFlush();
-        case DragStartResult():
-          _fireAndForget('pointerDown', api.pointerDown);
-        case DragMoveResult(:final dx, :final dy):
-          _pendingDragDx += dx;
-          _pendingDragDy += dy;
-          _scheduleFlush();
-        case DragEndResult():
-          _fireAndForget('pointerUp', api.pointerUp);
+
         case LeftClickResult():
-          _fireAndForget('leftClick', api.leftClick);
+          if (feedbackPosition != null && _settings.showTouchGlow) {
+            _addCommittedGlow(feedbackPosition);
+          }
+          _enqueueCommand('click', () async {
+            await _api.commitPointerAction(
+              PointerActionType.click,
+              showFeedback: _settings.showTouchGlow,
+            );
+          });
+
         case LongPressResult():
-          _fireAndForget('longPress', api.longPress);
-        case TwoFingerSwipeStartResult():
-          _fireAndForget('twoFingerMoveStart', api.twoFingerMoveStart);
-        case TwoFingerSwipeMoveResult(:final dx, :final dy):
-          _pendingSwipeDx += dx;
-          _pendingSwipeDy += dy;
+          if (feedbackPosition != null && _settings.showTouchGlow) {
+            _addCommittedGlow(feedbackPosition);
+          }
+          _enqueueCommand('longPress', () async {
+            await _api.commitPointerAction(
+              PointerActionType.longPress,
+              showFeedback: _settings.showTouchGlow,
+            );
+          });
+
+        case ContinuousGestureStartResult(:final sessionId, :final kind):
+          _activeContinuousId = sessionId;
+          _activeContinuousKind = kind;
+          _enqueueCommand('beginContinuousGesture', () async {
+            await _api.beginContinuousGesture(sessionId, _toRemoteKind(kind));
+          });
+
+        case ContinuousGestureMoveResult(
+          :final sessionId,
+          :final kind,
+          :final dx,
+          :final dy,
+        ):
+          if (_activeContinuousId != sessionId ||
+              _activeContinuousKind != kind) {
+            continue;
+          }
+          if (_pendingContinuousId != null &&
+              (_pendingContinuousId != sessionId ||
+                  _pendingContinuousKind != kind)) {
+            _flushContinuousNow(_pendingContinuousId!);
+          }
+          _pendingContinuousId = sessionId;
+          _pendingContinuousKind = kind;
+          _pendingContinuousDx += dx;
+          _pendingContinuousDy += dy;
           _scheduleFlush();
-        case TwoFingerSwipeEndResult():
-          _fireAndForget('twoFingerMoveEnd', api.twoFingerMoveEnd);
+
+        case ContinuousGestureEndResult(
+          :final sessionId,
+          :final kind,
+          :final cancelled,
+        ):
+          if (_activeContinuousId != sessionId ||
+              _activeContinuousKind != kind) {
+            continue;
+          }
+          _flushContinuousNow(sessionId);
+          _activeContinuousId = null;
+          _activeContinuousKind = null;
+          _enqueueCommand('endContinuousGesture', () async {
+            await _api.endContinuousGesture(sessionId, cancelled: cancelled);
+          });
       }
     }
   }
+
+  RemoteGestureKind _toRemoteKind(ContinuousGestureKind kind) => switch (kind) {
+    ContinuousGestureKind.drag => RemoteGestureKind.drag,
+    ContinuousGestureKind.scroll => RemoteGestureKind.scroll,
+  };
 
   void _scheduleFlush() {
     if (_frameScheduled) return;
     _frameScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _frameScheduled = false;
-      final dx = _pendingDx;
-      final dy = _pendingDy;
-      final dragDx = _pendingDragDx;
-      final dragDy = _pendingDragDy;
-      final swipeDx = _pendingSwipeDx;
-      final swipeDy = _pendingSwipeDy;
-      _pendingDx = 0;
-      _pendingDy = 0;
-      _pendingDragDx = 0;
-      _pendingDragDy = 0;
-      _pendingSwipeDx = 0;
-      _pendingSwipeDy = 0;
+      if (_disposed) return;
+      _flushCursorNow();
+      final id = _pendingContinuousId;
+      if (id != null) _flushContinuousNow(id);
+    });
+  }
 
-      final api = ref.read(desktopModeApiProvider);
-      if (dx != 0 || dy != 0) {
-        _fireAndForget('moveCursor', () => api.moveCursor(dx, dy));
-      }
-      if (dragDx != 0 || dragDy != 0) {
-        _fireAndForget('pointerMove', () => api.pointerMove(dragDx, dragDy));
-      }
-      if (swipeDx != 0 || swipeDy != 0) {
-        _fireAndForget('twoFingerMoveBy', () => api.twoFingerMoveBy(swipeDx, swipeDy));
+  void _flushCursorNow() {
+    final dx = _pendingCursorDx;
+    final dy = _pendingCursorDy;
+    _pendingCursorDx = 0;
+    _pendingCursorDy = 0;
+    if (dx == 0 && dy == 0) return;
+    _enqueueCommand('moveCursor', () => _api.moveCursor(dx, dy));
+  }
+
+  void _discardPendingCursorMove() {
+    _pendingCursorDx = 0;
+    _pendingCursorDy = 0;
+  }
+
+  void _flushContinuousNow(int sessionId) {
+    if (_pendingContinuousId != sessionId) return;
+    final dx = _pendingContinuousDx;
+    final dy = _pendingContinuousDy;
+    _pendingContinuousId = null;
+    _pendingContinuousKind = null;
+    _pendingContinuousDx = 0;
+    _pendingContinuousDy = 0;
+    if (dx == 0 && dy == 0) return;
+    _enqueueCommand('updateContinuousGesture', () async {
+      await _api.updateContinuousGesture(sessionId, dx, dy);
+    });
+  }
+
+  void _enqueueCommand(String label, Future<void> Function() action) {
+    _commandTail = _commandTail.then((_) async {
+      try {
+        // A missing OEM Accessibility callback must not permanently block the
+        // serialized input stream. Native has its own shorter watchdog; this
+        // is the final safety net for a MethodChannel reply that never arrives.
+        await action().timeout(_platformCommandTimeout);
+      } on TimeoutException {
+        debugPrint('[Touchpad] $label timed out; continuing input queue');
+      } catch (error) {
+        if (error is PlatformException) {
+          debugPrint(
+            '[Touchpad] $label failed: ${error.code} ${error.message ?? ''}',
+          );
+        } else {
+          debugPrint('[Touchpad] $label failed: $error');
+        }
       }
     });
   }
 
-  // ---- 誤操作防止(タッチロック、設定 ON のときのみ、仕様 §8.7) ----
+  void _syncRecognizerState() {
+    final phase = _recognizer.phase;
+    final sessionId = _recognizer.sessionId;
+    state = state.copyWith(
+      phase: phase,
+      gestureSessionId: sessionId,
+      clearGestureSessionId: sessionId == null,
+    );
+    if (_publishedPhase == phase.name && _publishedSessionId == sessionId) {
+      return;
+    }
+    _publishedPhase = phase.name;
+    _publishedSessionId = sessionId;
+    unawaited(
+      _api
+          .updateInputDiagnostics(phase: phase.name, sessionId: sessionId)
+          .catchError((Object error) {
+            debugPrint('[Touchpad] input diagnostics failed: $error');
+          }),
+    );
+  }
+
+  void _addCommittedGlow(Offset position) {
+    final id = _nextGlowId++;
+    state = state.copyWith(
+      fadingGlows: [...state.fadingGlows, FadingGlow(id, position)],
+    );
+    _glowTimers[id] = Timer(_glowFadeDuration, () {
+      _glowTimers.remove(id);
+      if (_disposed) return;
+      state = state.copyWith(
+        fadingGlows: state.fadingGlows.where((glow) => glow.id != id).toList(),
+      );
+    });
+  }
 
   void _armIdleLockTimer() {
     _idleLockTimer?.cancel();
     if (!_settings.touchLockEnabled) return;
-    _idleLockTimer = Timer(_idleLockDelay, _lock);
-  }
-
-  void _lock() {
-    _recognizer = TouchpadGestureRecognizer();
-    state = state.copyWith(
-      locked: true,
-      activeTouches: const {},
-      fadingGlows: const [],
-      unlockHoldProgress: 0,
+    _idleLockTimer = Timer(
+      Duration(seconds: _settings.touchLockIdleTimeoutSeconds),
+      _lock,
     );
   }
 
-  void _beginUnlockHold(int pointerId) {
+  /// タッチロック設定が ON のとき、ユーザーが明示的に今すぐロックするための入口。
+  void lockNow() {
+    if (!_settings.touchLockEnabled || state.locked) return;
+    _idleLockTimer?.cancel();
+    _lock();
+  }
+
+  void _lock() {
+    _longPressTimer?.cancel();
+    _applyResults(_recognizer.forceCancel());
+    _discardPendingCursorMove();
+    _touchPositions.clear();
+    state = state.copyWith(
+      locked: true,
+      fadingGlows: const [],
+      unlockHoldProgress: 0,
+      phase: TouchpadPhase.idle,
+      clearGestureSessionId: true,
+    );
+    _syncRecognizerState();
+  }
+
+  void _beginUnlockHold(int pointerId, Offset position) {
     if (_unlockHoldPointerId != null) return;
     _unlockHoldPointerId = pointerId;
+    _unlockHoldOrigin = position;
     var elapsedMs = 0;
-    _unlockHoldTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
+    _unlockHoldTimer = Timer.periodic(const Duration(milliseconds: 40), (
+      timer,
+    ) {
       elapsedMs += 40;
-      final progress = (elapsedMs / _unlockHoldDuration.inMilliseconds).clamp(0.0, 1.0);
+      final progress = (elapsedMs / _unlockHoldDuration.inMilliseconds).clamp(
+        0.0,
+        1.0,
+      );
       state = state.copyWith(unlockHoldProgress: progress);
       if (progress >= 1.0) {
         timer.cancel();
         _unlockHoldTimer = null;
         _unlockHoldPointerId = null;
+        _unlockHoldOrigin = null;
         state = state.copyWith(locked: false, unlockHoldProgress: 0);
         _armIdleLockTimer();
       }
@@ -279,6 +433,27 @@ class TouchpadController extends Notifier<TouchpadState> {
     _unlockHoldTimer?.cancel();
     _unlockHoldTimer = null;
     _unlockHoldPointerId = null;
+    _unlockHoldOrigin = null;
     state = state.copyWith(unlockHoldProgress: 0);
+  }
+
+  void _dispose() {
+    _longPressTimer?.cancel();
+    _idleLockTimer?.cancel();
+    _unlockHoldTimer?.cancel();
+    for (final timer in _glowTimers.values) {
+      timer.cancel();
+    }
+    _glowTimers.clear();
+    _touchPositions.clear();
+
+    final results = _recognizer.forceCancel();
+    for (final result in results.whereType<ContinuousGestureEndResult>()) {
+      _flushContinuousNow(result.sessionId);
+      _enqueueCommand('disposeGesture', () async {
+        await _api.endContinuousGesture(result.sessionId, cancelled: true);
+      });
+    }
+    _disposed = true;
   }
 }

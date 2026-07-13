@@ -1,299 +1,334 @@
-import 'package:desktop_mode/features/touchpad/touchpad_gesture_recognizer.dart';
+import 'package:external_touchpad/features/touchpad/touchpad_gesture_recognizer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('TouchpadGestureRecognizer', () {
     late TouchpadGestureRecognizer recognizer;
 
-    setUp(() {
-      recognizer = TouchpadGestureRecognizer();
-    });
+    setUp(() => recognizer = TouchpadGestureRecognizer());
 
-    test('single tap within duration and slop emits LeftClickResult', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      final result = recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-
-      expect(result, [isA<LeftClickResult>()]);
-    });
-
-    test('single tap held too long emits nothing', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      final result = recognizer.onPointerUp(1, const Duration(milliseconds: 300));
-
-      expect(result, isEmpty);
-    });
-
-    test('single finger move beyond slop emits CursorMoveResult and suppresses tap', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final moveResult = recognizer.onPointerMove(
-        1,
-        const Offset(20, 0),
-        const Duration(milliseconds: 20),
+    test('commits a tap only on pointer up', () {
+      expect(recognizer.onPointerDown(1, Offset.zero, Duration.zero), isEmpty);
+      final id = recognizer.sessionId;
+      expect(
+        recognizer.onPointerUp(
+          1,
+          Offset.zero,
+          const Duration(milliseconds: 250),
+        ),
+        [
+          isA<LeftClickResult>().having(
+            (result) => result.sessionId,
+            'sessionId',
+            id,
+          ),
+        ],
       );
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 40));
-
-      expect(moveResult, [isA<CursorMoveResult>()]);
-      expect(upResult, isEmpty);
+      expect(recognizer.phase, TouchpadPhase.idle);
     });
 
-    test('move within slop does not emit CursorMoveResult', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final moveResult = recognizer.onPointerMove(
-        1,
-        const Offset(4, 0),
-        const Duration(milliseconds: 20),
+    test('a slow release is not a tap', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      expect(
+        recognizer.onPointerUp(
+          1,
+          Offset.zero,
+          const Duration(milliseconds: 251),
+        ),
+        isEmpty,
       );
-
-      expect(moveResult, isEmpty);
     });
 
-    test('two-finger tap within window emits nothing (right-click removed)', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-      final firstUp = recognizer.onPointerUp(1, const Duration(milliseconds: 150));
-      final secondUp = recognizer.onPointerUp(2, const Duration(milliseconds: 150));
+    test(
+      'first cursor move includes the cumulative displacement through slop',
+      () {
+        recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+        expect(
+          recognizer.onPointerMove(
+            1,
+            const Offset(5, 0),
+            const Duration(milliseconds: 10),
+          ),
+          isEmpty,
+        );
+        final results = recognizer.onPointerMove(
+          1,
+          const Offset(13, 0),
+          const Duration(milliseconds: 20),
+        );
+        expect(results, hasLength(1));
+        final move = results.single as CursorMoveResult;
+        expect(move.dx, 13);
+        expect(move.dy, 0);
+        expect(
+          recognizer.onPointerUp(
+            1,
+            const Offset(13, 0),
+            const Duration(milliseconds: 30),
+          ),
+          isEmpty,
+        );
+      },
+    );
 
-      // 2本指タップは何も送らない(右クリックは廃止)。
-      expect(firstUp, isEmpty);
-      expect(secondUp, isEmpty);
-    });
-
-    test('second finger arriving after twoFingerWindow goes dead', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 200));
-      recognizer.onPointerUp(1, const Duration(milliseconds: 250));
-      final finalUp = recognizer.onPointerUp(2, const Duration(milliseconds: 250));
-
-      expect(finalUp, isEmpty);
-    });
-
-    test('third finger forces dead state', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(10, 10), const Duration(milliseconds: 10));
-      recognizer.onPointerDown(3, const Offset(20, 20), const Duration(milliseconds: 20));
-
-      recognizer.onPointerUp(1, const Duration(milliseconds: 30));
-      recognizer.onPointerUp(2, const Duration(milliseconds: 30));
-      final finalUp = recognizer.onPointerUp(3, const Duration(milliseconds: 30));
-
-      expect(finalUp, isEmpty);
-    });
-
-    test('recognizer returns to idle after all pointers lift', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onPointerUp(1, const Duration(milliseconds: 50));
-
-      // 前回のタップ後、時間を空けての独立したタップは通常の左クリックとして扱われる。
-      recognizer.onPointerDown(2, const Offset(0, 0), const Duration(milliseconds: 900));
-      final result = recognizer.onPointerUp(2, const Duration(milliseconds: 950));
-
-      expect(result, [isA<LeftClickResult>()]);
-    });
-
-    test('pointer cancel resets to idle without emitting click', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onPointerCancel(1);
-
-      recognizer.onPointerDown(2, const Offset(0, 0), const Duration(milliseconds: 200));
-      final result = recognizer.onPointerUp(2, const Duration(milliseconds: 250));
-
-      expect(result, [isA<LeftClickResult>()]);
-    });
-
-    test('pointer cancel during drag emits DragEndResult so native state is released', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onLongPressTimeout(1);
-      recognizer.onPointerMove(1, const Offset(30, 0), const Duration(milliseconds: 600));
-
-      final cancelResult = recognizer.onPointerCancel(1);
-
-      expect(cancelResult, [isA<DragEndResult>()]);
-
-      // キャンセル後は正常に idle へ戻り、次のタップが通常通り効く。
-      recognizer.onPointerDown(2, const Offset(0, 0), const Duration(milliseconds: 700));
-      final result = recognizer.onPointerUp(2, const Duration(milliseconds: 750));
-      expect(result, [isA<LeftClickResult>()]);
-    });
-
-    test('pointer cancel during two-finger swipe emits TwoFingerSwipeEndResult', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-      recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
-
-      final cancelResult = recognizer.onPointerCancel(1);
-      expect(cancelResult, [isA<TwoFingerSwipeEndResult>()]);
-
-      // 残った指がキャンセルされても、既に dead 状態なので何も送らない。
-      final secondCancel = recognizer.onPointerCancel(2);
-      expect(secondCancel, isEmpty);
-
-      // 次のタップは通常通り効く。
-      recognizer.onPointerDown(3, const Offset(0, 0), const Duration(milliseconds: 200));
-      final result = recognizer.onPointerUp(3, const Duration(milliseconds: 250));
-      expect(result, [isA<LeftClickResult>()]);
-    });
-
-    test('touch then move is always cursor move, never a tap, however fast', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final moveResult = recognizer.onPointerMove(
-        1,
-        const Offset(20, 0),
-        const Duration(milliseconds: 5),
-      );
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 10));
-
-      expect(moveResult, [isA<CursorMoveResult>()]);
-      expect(upResult, isEmpty);
-    });
-
-    test('re-touch after tap is independent and emits a click', () {
-      // タップ直後の再タッチによるドラッグは削除済み。
-      // 再タッチは独立した操作として扱われ、離すと通常のクリックが送られる。
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final firstUp = recognizer.onPointerUp(1, const Duration(milliseconds: 50));
-
-      recognizer.onPointerDown(2, const Offset(2, 2), const Duration(milliseconds: 150));
-      final upResult = recognizer.onPointerUp(2, const Duration(milliseconds: 200));
-
-      expect(firstUp, [isA<LeftClickResult>()]);
-      expect(upResult, [isA<LeftClickResult>()]);
-    });
-
-    test('re-touch after tap and move is cursor move, not drag', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onPointerUp(1, const Duration(milliseconds: 50));
-
-      recognizer.onPointerDown(2, const Offset(2, 2), const Duration(milliseconds: 150));
-      final moveResult = recognizer.onPointerMove(
+    test('stale long-press timers cannot arm a newer session', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      final oldId = recognizer.sessionId!;
+      recognizer.onPointerUp(1, Offset.zero, const Duration(milliseconds: 50));
+      recognizer.onPointerDown(
         2,
-        const Offset(30, 2),
-        const Duration(milliseconds: 180),
+        Offset.zero,
+        const Duration(milliseconds: 100),
       );
 
-      expect(moveResult, [isA<CursorMoveResult>()]);
+      recognizer.onLongPressTimeout(2, oldId);
+
+      expect(recognizer.phase, TouchpadPhase.oneFingerPending);
     });
 
-    test('long press timeout without moving then release emits LongPressResult', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final timeoutResult = recognizer.onLongPressTimeout(1);
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 600));
+    test(
+      'long press arms drag and release without movement commits long press',
+      () {
+        recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+        final id = recognizer.sessionId!;
+        recognizer.onLongPressTimeout(1, id);
 
-      expect(timeoutResult, isEmpty);
-      expect(upResult, [isA<LongPressResult>()]);
-    });
+        expect(recognizer.phase, TouchpadPhase.dragArmed);
+        expect(
+          recognizer.onPointerUp(1, Offset.zero, const Duration(seconds: 1)),
+          [isA<LongPressResult>()],
+        );
+      },
+    );
 
-    test('long press timeout then move starts a drag directly (no re-touch needed)', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onLongPressTimeout(1);
-      final moveResult = recognizer.onPointerMove(
-        1,
-        const Offset(30, 0),
-        const Duration(milliseconds: 600),
+    test('movement after drag arm begins one continuous drag', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      final id = recognizer.sessionId!;
+      recognizer.onLongPressTimeout(1, id);
+      expect(
+        recognizer.onPointerMove(
+          1,
+          const Offset(1, 0),
+          const Duration(seconds: 1),
+        ),
+        isEmpty,
       );
 
-      expect(moveResult, [isA<DragStartResult>(), isA<DragMoveResult>()]);
-    });
-
-    test('subsequent moves after long-press drag start emit DragMoveResult', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onLongPressTimeout(1);
-      recognizer.onPointerMove(1, const Offset(30, 0), const Duration(milliseconds: 600));
-      final moveResult = recognizer.onPointerMove(
-        1,
-        const Offset(50, 0),
-        const Duration(milliseconds: 620),
-      );
-
-      expect(moveResult, [isA<DragMoveResult>()]);
-    });
-
-    test('long-press drag ends with DragEndResult on pointer up', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onLongPressTimeout(1);
-      recognizer.onPointerMove(1, const Offset(30, 0), const Duration(milliseconds: 600));
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 700));
-
-      expect(upResult, [isA<DragEndResult>()]);
-    });
-
-    test('long press timeout then tiny move starts a drag without slop', () {
-      // 長押し後はわずかな動きでもドラッグ開始する。
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onLongPressTimeout(1);
-      final moveResult = recognizer.onPointerMove(
+      final start = recognizer.onPointerMove(
         1,
         const Offset(2, 0),
-        const Duration(milliseconds: 600),
+        const Duration(milliseconds: 1010),
+      );
+      expect(start, [
+        isA<ContinuousGestureStartResult>().having(
+          (result) => result.kind,
+          'kind',
+          ContinuousGestureKind.drag,
+        ),
+        isA<ContinuousGestureMoveResult>(),
+      ]);
+      final end = recognizer.onPointerUp(
+        1,
+        const Offset(2, 0),
+        const Duration(milliseconds: 1020),
+      );
+      expect(
+        end.single,
+        isA<ContinuousGestureEndResult>()
+            .having((result) => result.kind, 'kind', ContinuousGestureKind.drag)
+            .having((result) => result.cancelled, 'cancelled', false),
+      );
+    });
+
+    test('movement reported only on up becomes drag, not long press', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      final id = recognizer.sessionId!;
+      recognizer.onLongPressTimeout(1, id);
+
+      final results = recognizer.onPointerUp(
+        1,
+        const Offset(20, 0),
+        const Duration(milliseconds: 1010),
       );
 
-      expect(moveResult, [isA<DragStartResult>(), isA<DragMoveResult>()]);
+      expect(results, [
+        isA<ContinuousGestureStartResult>(),
+        isA<ContinuousGestureMoveResult>(),
+        isA<ContinuousGestureEndResult>().having(
+          (result) => result.cancelled,
+          'cancelled',
+          false,
+        ),
+      ]);
+      expect(results.whereType<LongPressResult>(), isEmpty);
     });
 
-    test('long press timeout has no effect once the finger already moved', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      recognizer.onPointerMove(1, const Offset(30, 0), const Duration(milliseconds: 20));
-      final timeoutResult = recognizer.onLongPressTimeout(1);
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 600));
-
-      expect(timeoutResult, isEmpty);
-      expect(upResult, isEmpty);
-    });
-
-    test('long press timeout for an unrelated pointer id is ignored', () {
-      recognizer.onPointerDown(1, const Offset(0, 0), const Duration(milliseconds: 0));
-      final timeoutResult = recognizer.onLongPressTimeout(99);
-      final upResult = recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-
-      expect(timeoutResult, isEmpty);
-      // 武装されていないので通常の短時間タップとして扱われる。
-      expect(upResult, [isA<LeftClickResult>()]);
-    });
-
-    test('two fingers moving together emit TwoFingerSwipeStart then half-delta moves', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-
-      final moveA = recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
-      expect(moveA, [isA<TwoFingerSwipeStartResult>(), isA<TwoFingerSwipeMoveResult>()]);
-      final firstMove = moveA[1] as TwoFingerSwipeMoveResult;
-      // 重心(2点平均)の移動量として、実際の移動量の半分を返す。
-      expect(firstMove.dy, 15);
-
-      final moveB = recognizer.onPointerMove(2, const Offset(50, 80), const Duration(milliseconds: 90));
-      expect(moveB, [isA<TwoFingerSwipeMoveResult>()]);
-      final secondMove = moveB.single as TwoFingerSwipeMoveResult;
-      expect(secondMove.dy, 15);
-      // 2指分を合算すると実際に動いた量(30+30)と一致する。
-      expect(firstMove.dy + secondMove.dy, 30);
-    });
-
-    test('lifting one finger during two-finger swipe ends the gesture and ignores the rest', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-      recognizer.onPointerMove(1, const Offset(10, 40), const Duration(milliseconds: 80));
-
-      final endResult = recognizer.onPointerUp(1, const Duration(milliseconds: 100));
-      expect(endResult, [isA<TwoFingerSwipeEndResult>()]);
-
-      // 残った指の動きは無視される(誤ってカーソル移動やタップにならない)。
-      final ignoredMove = recognizer.onPointerMove(
+    test('a late second finger still suppresses click', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      recognizer.onPointerDown(
         2,
-        const Offset(90, 50),
-        const Duration(milliseconds: 110),
+        const Offset(40, 0),
+        const Duration(milliseconds: 900),
       );
-      expect(ignoredMove, isEmpty);
-      final ignoredUp = recognizer.onPointerUp(2, const Duration(milliseconds: 120));
-      expect(ignoredUp, isEmpty);
+
+      expect(recognizer.phase, TouchpadPhase.twoFingerPending);
+      expect(
+        recognizer.onPointerUp(
+          1,
+          Offset.zero,
+          const Duration(milliseconds: 910),
+        ),
+        isEmpty,
+      );
+      expect(recognizer.phase, TouchpadPhase.suppressed);
+      expect(
+        recognizer.onPointerUp(
+          2,
+          const Offset(40, 0),
+          const Duration(milliseconds: 920),
+        ),
+        isEmpty,
+      );
+      expect(recognizer.phase, TouchpadPhase.idle);
     });
 
-    test('two-finger tap without movement emits nothing but ends cleanly', () {
-      recognizer.onPointerDown(1, const Offset(10, 10), const Duration(milliseconds: 0));
-      recognizer.onPointerDown(2, const Offset(50, 50), const Duration(milliseconds: 50));
-      final firstUp = recognizer.onPointerUp(1, const Duration(milliseconds: 150));
-      final secondUp = recognizer.onPointerUp(2, const Duration(milliseconds: 150));
+    test(
+      'second finger can take over from cursor movement without a touch action',
+      () {
+        recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+        expect(
+          recognizer.onPointerMove(
+            1,
+            const Offset(20, 0),
+            const Duration(milliseconds: 20),
+          ),
+          [isA<CursorMoveResult>()],
+        );
 
-      expect(firstUp, isEmpty);
-      expect(secondUp, isEmpty);
+        expect(
+          recognizer.onPointerDown(
+            2,
+            const Offset(40, 0),
+            const Duration(milliseconds: 300),
+          ),
+          isEmpty,
+        );
+        expect(recognizer.phase, TouchpadPhase.twoFingerPending);
+      },
+    );
+
+    test('two-finger centroid movement becomes a one-stream scroll', () {
+      recognizer.onPointerDown(1, const Offset(10, 10), Duration.zero);
+      recognizer.onPointerDown(
+        2,
+        const Offset(50, 10),
+        const Duration(milliseconds: 300),
+      );
+
+      final start = recognizer.onPointerMove(
+        1,
+        const Offset(10, 40),
+        const Duration(milliseconds: 320),
+      );
+      expect(start, [
+        isA<ContinuousGestureStartResult>().having(
+          (result) => result.kind,
+          'kind',
+          ContinuousGestureKind.scroll,
+        ),
+        isA<ContinuousGestureMoveResult>(),
+      ]);
+      expect((start[1] as ContinuousGestureMoveResult).dy, 15);
+
+      final move = recognizer.onPointerMove(
+        2,
+        const Offset(50, 40),
+        const Duration(milliseconds: 330),
+      );
+      expect((move.single as ContinuousGestureMoveResult).dy, 15);
+
+      final end = recognizer.onPointerUp(
+        1,
+        const Offset(10, 40),
+        const Duration(milliseconds: 340),
+      );
+      expect(
+        end.single,
+        isA<ContinuousGestureEndResult>()
+            .having(
+              (result) => result.kind,
+              'kind',
+              ContinuousGestureKind.scroll,
+            )
+            .having((result) => result.cancelled, 'cancelled', false),
+      );
+      expect(
+        recognizer.onPointerMove(
+          2,
+          const Offset(70, 40),
+          const Duration(milliseconds: 350),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('third pointer cancels an active scroll exactly once', () {
+      recognizer.onPointerDown(1, const Offset(10, 10), Duration.zero);
+      recognizer.onPointerDown(2, const Offset(50, 10), Duration.zero);
+      recognizer.onPointerMove(
+        1,
+        const Offset(10, 40),
+        const Duration(milliseconds: 20),
+      );
+
+      final cancel = recognizer.onPointerDown(
+        3,
+        const Offset(80, 10),
+        const Duration(milliseconds: 30),
+      );
+      expect(
+        cancel.single,
+        isA<ContinuousGestureEndResult>().having(
+          (result) => result.cancelled,
+          'cancelled',
+          true,
+        ),
+      );
+      expect(recognizer.onPointerCancel(1), isEmpty);
+      expect(recognizer.onPointerCancel(2), isEmpty);
+      expect(recognizer.onPointerCancel(3), isEmpty);
+      expect(recognizer.phase, TouchpadPhase.idle);
+    });
+
+    test('forceCancel releases active drag and next session works', () {
+      recognizer.onPointerDown(1, Offset.zero, Duration.zero);
+      final id = recognizer.sessionId!;
+      recognizer.onLongPressTimeout(1, id);
+      recognizer.onPointerMove(
+        1,
+        const Offset(20, 0),
+        const Duration(seconds: 1),
+      );
+
+      expect(
+        recognizer.forceCancel().single,
+        isA<ContinuousGestureEndResult>().having(
+          (result) => result.cancelled,
+          'cancelled',
+          true,
+        ),
+      );
+      expect(recognizer.phase, TouchpadPhase.idle);
+
+      recognizer.onPointerDown(2, Offset.zero, const Duration(seconds: 2));
+      expect(
+        recognizer.onPointerUp(
+          2,
+          Offset.zero,
+          const Duration(milliseconds: 2050),
+        ),
+        [isA<LeftClickResult>()],
+      );
     });
   });
 }

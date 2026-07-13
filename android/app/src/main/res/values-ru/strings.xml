@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Тачпад для внешнего дисплея</string>
+    <string name="monitor_notification_channel_name">Отслеживание внешнего дисплея</string>
+    <string name="monitor_notification_text">Нажмите, чтобы открыть тачпад</string>
+    <string name="accessibility_service_label">Тачпад для внешнего дисплея</string>
+    <string name="accessibility_service_description">Выполняет нажатия, долгие нажатия, перетаскивания и прокрутку на внешнем дисплее в соответствии с вашими действиями на тачпаде, а также читает сведения об окнах на внешнем дисплее, чтобы сохранять правильный размер окон запущенных приложений. Данные не собираются и не передаются.</string>
+</resources>

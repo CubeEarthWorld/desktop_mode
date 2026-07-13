@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default locale: English. Localized overrides live in values-<lang>/strings.xml. -->
+    <string name="app_name">External Display Touchpad</string>
+    <string name="monitor_notification_channel_name">External display monitoring</string>
+    <string name="monitor_notification_text">Tap to open the touchpad</string>
+    <string name="accessibility_service_label">External Display Touchpad</string>
+    <string name="accessibility_service_description">Performs taps, long presses, drags and scrolls on the external display on your behalf when you operate the touchpad, and reads window information on the external display to keep launched app windows sized correctly. No data is collected or shared.</string>
+</resources>

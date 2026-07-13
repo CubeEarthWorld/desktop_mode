@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../platform/desktop_mode_channel.dart';
+import '../platform/external_touchpad_channel.dart';
 import 'app_settings.dart';
 import 'settings_repository.dart';
 
@@ -18,7 +18,9 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
     return settings;
   }
 
-  Future<void> updateSettings(AppSettings Function(AppSettings current) transform) async {
+  Future<void> updateSettings(
+    AppSettings Function(AppSettings current) transform,
+  ) async {
     final current = state.value ?? const AppSettings();
     final next = transform(current);
     state = AsyncData(next);
@@ -27,7 +29,7 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
   }
 
   Future<void> _syncNative(AppSettings settings) => ref
-      .read(desktopModeApiProvider)
+      .read(externalTouchpadApiProvider)
       .updateConfig(
         pointerSpeed: settings.pointerSpeed,
         longPressDurationMs: settings.longPressDurationMs,
@@ -36,5 +38,8 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
         externalHomePackage: settings.externalHomePackage,
         externalHomeActivity: settings.externalHomeActivity,
         preferredDisplayModeId: settings.preferredDisplayModeId,
+        appWindowModes: settings.appWindowModes.map(
+          (key, value) => MapEntry(key, value.name),
+        ),
       );
 }

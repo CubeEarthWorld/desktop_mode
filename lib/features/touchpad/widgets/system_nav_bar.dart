@@ -36,9 +36,27 @@ class SystemNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Expanded(child: _NavButton(icon: Icons.arrow_back, enabled: enabled, onTap: onBack)),
-          Expanded(child: _NavButton(icon: Icons.circle_outlined, enabled: enabled, onTap: onHome)),
-          Expanded(child: _NavButton(icon: Icons.apps, enabled: enabled, onTap: onAppList)),
+          Expanded(
+            child: _NavButton(
+              icon: Icons.arrow_back,
+              enabled: enabled,
+              onTap: onBack,
+            ),
+          ),
+          Expanded(
+            child: _NavButton(
+              icon: Icons.circle_outlined,
+              enabled: enabled,
+              onTap: onHome,
+            ),
+          ),
+          Expanded(
+            child: _NavButton(
+              icon: Icons.apps,
+              enabled: enabled,
+              onTap: onAppList,
+            ),
+          ),
         ],
       ),
     );
@@ -46,7 +64,11 @@ class SystemNavBar extends StatelessWidget {
 }
 
 class _NavButton extends StatefulWidget {
-  const _NavButton({required this.icon, required this.enabled, required this.onTap});
+  const _NavButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final IconData icon;
   final bool enabled;
@@ -66,6 +88,9 @@ class _NavButtonState extends State<_NavButton> {
         : (_pressed ? AppColors.foregroundPressed : AppColors.foreground);
 
     return GestureDetector(
+      // アイコンの描画領域だけでなく、3分割された各エリア全体をタップ可能にする
+      // (deferToChild のままだとアイコン上しか反応せず操作ミスを誘発する)。
+      behavior: HitTestBehavior.opaque,
       onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
       onTapCancel: () => setState(() => _pressed = false),
       onTapUp: (_) => setState(() => _pressed = false),

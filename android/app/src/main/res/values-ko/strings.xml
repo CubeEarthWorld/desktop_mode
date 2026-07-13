@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">외부 디스플레이 터치패드</string>
+    <string name="monitor_notification_channel_name">외부 디스플레이 모니터링</string>
+    <string name="monitor_notification_text">탭하여 터치패드 열기</string>
+    <string name="accessibility_service_label">외부 디스플레이 터치패드</string>
+    <string name="accessibility_service_description">터치패드 조작에 따라 외부 디스플레이에서 탭·길게 누르기·드래그·스크롤을 대신 수행하고, 실행된 앱 창의 크기를 올바르게 유지하기 위해 외부 디스플레이의 창 정보를 읽습니다. 데이터를 수집하거나 공유하지 않습니다.</string>
+</resources>

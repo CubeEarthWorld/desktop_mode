@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/platform/app_status_provider.dart';
-import '../../core/platform/desktop_mode_channel.dart';
+import '../../core/platform/external_touchpad_channel.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
+import '../../l10n/l10n.dart';
 import '../../models/display_info.dart';
 import '../../models/home_app_info.dart';
 import 'widgets/display_mode_picker.dart';
@@ -24,75 +25,86 @@ class SettingsScreen extends ConsumerWidget {
     final externalDisplays = ref.watch(
       appStatusProvider.select((s) => s.externalDisplays),
     );
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('設定')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('設定の読み込みに失敗しました: $error')),
+        error: (error, stack) =>
+            Center(child: Text(l10n.settingsLoadFailed('$error'))),
         data: (settings) => ListView(
           padding: const EdgeInsets.all(AppDimens.screenPadding),
           children: [
-            _SectionLabel('起動'),
+            _SectionLabel(l10n.sectionStartup),
             _ToggleRow(
-              label: '自動起動',
-              description: '外部ディスプレイ接続時に自動でタッチパッド画面を開く',
+              label: l10n.autoStartLabel,
+              description: l10n.autoStartDescription,
               value: settings.autoStart,
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(autoStart: v)),
+              onChanged: (v) =>
+                  notifier.updateSettings((s) => s.copyWith(autoStart: v)),
             ),
             _ToggleRow(
-              label: '常駐監視',
-              description: 'アプリを閉じていても外部ディスプレイ接続を監視する',
+              label: l10n.residentMonitoringLabel,
+              description: l10n.residentMonitoringDescription,
               value: settings.residentMonitoring,
               onChanged: (v) async {
-                final api = ref.read(desktopModeApiProvider);
+                final api = ref.read(externalTouchpadApiProvider);
                 final accepted = await api.setResidentMonitoring(v);
                 await notifier.updateSettings(
                   (s) => s.copyWith(residentMonitoring: accepted && v),
                 );
               },
             ),
-            const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
-            _SectionLabel('表示'),
+            const _SectionDivider(),
+            _SectionLabel(l10n.sectionDisplay),
             _ToggleRow(
-              label: '外部カーソル表示',
-              description: '外部ディスプレイ上に仮想カーソルを表示する',
+              label: l10n.showCursorLabel,
+              description: l10n.showCursorDescription,
               value: settings.showCursor,
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(showCursor: v)),
+              onChanged: (v) =>
+                  notifier.updateSettings((s) => s.copyWith(showCursor: v)),
             ),
             _ToggleRow(
-              label: 'タッチ発光表示',
-              description: '本体画面のタッチ位置をぼんやり光らせる',
+              label: l10n.touchGlowLabel,
+              description: l10n.touchGlowDescription,
               value: settings.showTouchGlow,
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(showTouchGlow: v)),
+              onChanged: (v) =>
+                  notifier.updateSettings((s) => s.copyWith(showTouchGlow: v)),
             ),
-            const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
-            _SectionLabel('操作'),
+            const _SectionDivider(),
+            _SectionLabel(l10n.sectionInput),
             _SliderRow(
-              label: 'ポインター速度',
+              label: l10n.pointerSpeedLabel,
               value: settings.pointerSpeed,
               min: AppSettings.pointerSpeedMin,
               max: AppSettings.pointerSpeedMax,
               displayValue: settings.pointerSpeed.toStringAsFixed(1),
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(pointerSpeed: v)),
+              onChanged: (v) =>
+                  notifier.updateSettings((s) => s.copyWith(pointerSpeed: v)),
             ),
             _SliderRow(
-              label: '長押し/ドラッグ開始時間',
+              label: l10n.longPressDurationLabel,
               value: settings.longPressDurationMs.toDouble(),
               min: AppSettings.longPressDurationMinMs.toDouble(),
               max: AppSettings.longPressDurationMaxMs.toDouble(),
               displayValue: '${settings.longPressDurationMs}ms',
-              onChanged: (v) =>
-                  notifier.updateSettings((s) => s.copyWith(longPressDurationMs: v.round())),
+              onChanged: (v) => notifier.updateSettings(
+                (s) => s.copyWith(longPressDurationMs: v.round()),
+              ),
             ),
             _SliderRow(
-              label: 'カーソル自動非表示時間',
+              label: l10n.cursorIdleTimeoutLabel,
               value: settings.cursorIdleTimeoutMs.toDouble(),
               min: AppSettings.cursorIdleTimeoutMinMs.toDouble(),
               max: AppSettings.cursorIdleTimeoutMaxMs.toDouble(),
-              displayValue: _cursorIdleLabel(settings.cursorIdleTimeoutMs),
-              onChanged: (v) =>
-                  notifier.updateSettings((s) => s.copyWith(cursorIdleTimeoutMs: v.round())),
+              displayValue: _cursorIdleLabel(
+                l10n,
+                settings.cursorIdleTimeoutMs,
+              ),
+              onChanged: (v) => notifier.updateSettings(
+                (s) => s.copyWith(cursorIdleTimeoutMs: v.round()),
+              ),
             ),
             if (externalDisplays.length > 1) ...[
               const SizedBox(height: AppDimens.spacingMedium),
@@ -121,7 +133,8 @@ class SettingsScreen extends ConsumerWidget {
             if (externalDisplays.isNotEmpty) ...[
               const SizedBox(height: AppDimens.spacingMedium),
               DisplayModePicker(
-                displayId: settings.preferredDisplayId ?? externalDisplays.first.id,
+                displayId:
+                    settings.preferredDisplayId ?? externalDisplays.first.id,
                 selectedModeId: settings.preferredDisplayModeId,
                 onChanged: (modeId) => notifier.updateSettings(
                   (s) => modeId == null
@@ -130,57 +143,78 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ],
-            const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
-            _SectionLabel('誤操作防止・画面保護'),
+            const _SectionDivider(),
+            _SectionLabel(l10n.sectionProtection),
             _ToggleRow(
-              label: 'タッチロック',
-              description: '30秒無操作でロックし、2秒長押しで解除する',
+              label: l10n.touchLockLabel,
+              description: l10n.touchLockDescription,
               value: settings.touchLockEnabled,
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(touchLockEnabled: v)),
+              onChanged: (v) => notifier.updateSettings(
+                (s) => s.copyWith(touchLockEnabled: v),
+              ),
+            ),
+            _TouchLockTimeoutRow(
+              value: settings.touchLockIdleTimeoutSeconds,
+              onChanged: (seconds) => notifier.updateSettings(
+                (s) => s.copyWith(touchLockIdleTimeoutSeconds: seconds),
+              ),
             ),
             _ToggleRow(
-              label: '有機ELディスプレイの保護',
-              description: '数分ごとにUI位置をわずかにずらす',
-              value: settings.oledProtection,
-              onChanged: (v) => notifier.updateSettings((s) => s.copyWith(oledProtection: v)),
+              label: l10n.minimizeBrightnessWhileLockedLabel,
+              description: l10n.minimizeBrightnessWhileLockedDescription,
+              value: settings.minimizeBrightnessWhileLocked,
+              onChanged: (v) => notifier.updateSettings(
+                (s) => s.copyWith(minimizeBrightnessWhileLocked: v),
+              ),
             ),
-            const Divider(color: AppColors.divider, height: AppDimens.spacingLarge * 2),
-            const _SectionLabel('使い方'),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppDimens.spacingSmall),
+            _ToggleRow(
+              label: l10n.oledProtectionLabel,
+              description: l10n.oledProtectionDescription,
+              value: settings.oledProtection,
+              onChanged: (v) =>
+                  notifier.updateSettings((s) => s.copyWith(oledProtection: v)),
+            ),
+            const _SectionDivider(),
+            _SectionLabel(l10n.sectionHowTo),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppDimens.spacingSmall,
+              ),
               child: Text(
-                '移動: 1本指で動かすとカーソルが移動します\n'
-                '\n'
-                'クリック: 1本指でタッチして、動かさずに素早く離すとクリック\n'
-                '\n'
-                '長押し: 1本指を動かさずにしばらく押さえてから、動かさずに離す'
-                '(Android のマウスに右クリックは無いため、右クリックの代わりに'
-                'この長押し操作を使います)\n'
-                '\n'
-                'ドラッグ: 1本指を動かさずにしばらく(長押し開始時間)押さえたあと、'
-                'そのまま指を離さずに動かすとドラッグ開始。指を離すとドラッグ終了です\n'
-                '\n'
-                'スワイプ: 2本指を同時に動かすと、外部ディスプレイ側へスワイプ/'
-                'スクロールとして転送されます。2点は常に同じ量だけ動くため'
-                'ピンチにはなりません\n'
-                '\n'
-                '下部ナビ「戻る」: 外部ディスプレイへ画面端からのスワイプを送ります。'
-                '外部ディスプレイ側のアプリ/ランチャーがジェスチャーナビゲーションの'
-                '編集を認識していない場合、反応しないことがあります(Android にディスプレイを'
-                '指定して「戻る」を送る公式手段が無いための制約です)\n'
-                '\n'
-                '下部ナビ「ホーム」: 設定したホームアプリ(未設定ならシステム標準)を'
-                '外部ディスプレイで起動します\n'
-                '\n'
-                '下部ナビ「アプリ一覧」: インストール済みアプリの一覧を開き、'
-                '選択したアプリを外部ディスプレイで起動します',
-                style: TextStyle(color: AppColors.foreground, height: 1.6, fontSize: 13),
+                l10n.howToText,
+                style: const TextStyle(
+                  color: AppColors.foreground,
+                  height: 1.6,
+                  fontSize: 13,
+                ),
               ),
             ),
             const SizedBox(height: AppDimens.spacingMedium),
             OutlinedButton(
               onPressed: () => context.push('/diagnostics'),
-              child: const Text('診断画面を開く'),
+              child: Text(l10n.openDiagnostics),
+            ),
+            const _SectionDivider(),
+            _SectionLabel(l10n.sectionAbout),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.code, color: AppColors.accent),
+              title: Text(
+                l10n.openSourceLicenses,
+                style: const TextStyle(color: AppColors.foreground),
+              ),
+              subtitle: Text(
+                l10n.openSourceLicensesDescription,
+                style: const TextStyle(color: AppColors.disabled, fontSize: 12),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.disabled,
+              ),
+              onTap: () => showLicensePage(
+                context: context,
+                applicationName: l10n.appTitle,
+              ),
             ),
           ],
         ),
@@ -189,10 +223,21 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-String _cursorIdleLabel(int ms) {
-  if (ms <= 0) return 'OFF';
+String _cursorIdleLabel(AppLocalizations l10n, int ms) {
+  if (ms <= 0) return l10n.cursorIdleOff;
   if (ms < 1000) return '${ms}ms';
-  return '${(ms / 1000).toStringAsFixed(1)}秒';
+  return l10n.secondsValue((ms / 1000).toStringAsFixed(1));
+}
+
+/// セクション間の区切り線。全セクションで同じ見た目を共有する(DRY)。
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) => const Divider(
+    color: AppColors.divider,
+    height: AppDimens.spacingLarge * 2,
+  );
 }
 
 class _SectionLabel extends StatelessWidget {
@@ -204,7 +249,11 @@ class _SectionLabel extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: AppDimens.spacingSmall),
     child: Text(
       text,
-      style: const TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w600),
+      style: const TextStyle(
+        color: AppColors.accent,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 }
@@ -227,7 +276,10 @@ class _ToggleRow extends StatelessWidget {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(label, style: const TextStyle(color: AppColors.foreground)),
-      subtitle: Text(description, style: const TextStyle(color: AppColors.disabled, fontSize: 12)),
+      subtitle: Text(
+        description,
+        style: const TextStyle(color: AppColors.disabled, fontSize: 12),
+      ),
       value: value,
       onChanged: onChanged,
     );
@@ -269,18 +321,63 @@ class _SliderRow extends StatelessWidget {
   }
 }
 
+class _TouchLockTimeoutRow extends StatelessWidget {
+  const _TouchLockTimeoutRow({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimens.spacingSmall),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.touchLockTimeoutLabel,
+              style: const TextStyle(color: AppColors.foreground),
+            ),
+          ),
+          const SizedBox(width: AppDimens.spacingMedium),
+          DropdownButton<int>(
+            value: value,
+            dropdownColor: AppColors.surfaceElevated,
+            onChanged: (seconds) {
+              if (seconds != null) onChanged(seconds);
+            },
+            items: [
+              for (final seconds
+                  in AppSettings.touchLockIdleTimeoutOptionsSeconds)
+                DropdownMenuItem(
+                  value: seconds,
+                  child: Text(l10n.secondsValue('$seconds')),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 外部ディスプレイの「ホーム」で起動するアプリの選択(例: Nova Launcher)。
 /// OEM 標準ランチャーが横向きの外部ディスプレイの表示に対応していない場合の回避策として、
 /// 明示的に別のランチャーを選べるようにする。
 class _HomeAppPicker extends ConsumerWidget {
-  const _HomeAppPicker({required this.selectedPackage, required this.onChanged});
+  const _HomeAppPicker({
+    required this.selectedPackage,
+    required this.onChanged,
+  });
 
   final String? selectedPackage;
   final ValueChanged<HomeAppInfo?> onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final api = ref.read(desktopModeApiProvider);
+    final api = ref.read(externalTouchpadApiProvider);
+    final l10n = context.l10n;
     return FutureBuilder<List<HomeAppInfo>>(
       future: api.getHomeApps(),
       builder: (context, snapshot) {
@@ -291,12 +388,14 @@ class _HomeAppPicker extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('外部ディスプレイのホームアプリ', style: TextStyle(color: AppColors.foreground)),
+            Text(
+              l10n.homeAppLabel,
+              style: const TextStyle(color: AppColors.foreground),
+            ),
             const SizedBox(height: 4),
-            const Text(
-              'ホームボタンや戻る操作でホームを開く際に起動するアプリ。'
-              '標準ランチャーが横画面に対応していない場合、別のランチャーを指定できます。',
-              style: TextStyle(color: AppColors.disabled, fontSize: 12),
+            Text(
+              l10n.homeAppDescription,
+              style: const TextStyle(color: AppColors.disabled, fontSize: 12),
             ),
             const SizedBox(height: AppDimens.spacingSmall),
             if (!snapshot.hasData)
@@ -311,7 +410,7 @@ class _HomeAppPicker extends ConsumerWidget {
             else
               DropdownButton<String?>(
                 value: validSelection,
-                dropdownColor: const Color(0xFF0A0A0A),
+                dropdownColor: AppColors.surfaceElevated,
                 isExpanded: true,
                 onChanged: (packageName) {
                   HomeAppInfo? app;
@@ -324,9 +423,15 @@ class _HomeAppPicker extends ConsumerWidget {
                   onChanged(app);
                 },
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('システム標準')),
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(l10n.systemDefault),
+                  ),
                   for (final app in apps)
-                    DropdownMenuItem(value: app.packageName, child: Text(app.label)),
+                    DropdownMenuItem(
+                      value: app.packageName,
+                      child: Text(app.label),
+                    ),
                 ],
               ),
           ],
@@ -349,18 +454,22 @@ class _DisplayPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('対象ディスプレイ', style: TextStyle(color: AppColors.foreground)),
+        Text(
+          l10n.targetDisplayLabel,
+          style: const TextStyle(color: AppColors.foreground),
+        ),
         const SizedBox(height: AppDimens.spacingSmall),
         DropdownButton<int?>(
           value: selectedId,
-          dropdownColor: const Color(0xFF0A0A0A),
+          dropdownColor: AppColors.surfaceElevated,
           isExpanded: true,
           onChanged: onChanged,
           items: [
-            const DropdownMenuItem(value: null, child: Text('自動(最大の外部ディスプレイ)')),
+            DropdownMenuItem(value: null, child: Text(l10n.targetDisplayAuto)),
             for (final display in displays)
               DropdownMenuItem(value: display.id, child: Text(display.name)),
           ],

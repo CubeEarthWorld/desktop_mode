@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Panel táctil para pantalla externa</string>
+    <string name="monitor_notification_channel_name">Supervisión de pantalla externa</string>
+    <string name="monitor_notification_text">Toca para abrir el panel táctil</string>
+    <string name="accessibility_service_label">Panel táctil para pantalla externa</string>
+    <string name="accessibility_service_description">Realiza pulsaciones, pulsaciones largas, arrastres y desplazamientos en la pantalla externa según tus gestos en el panel táctil, y lee la información de las ventanas de la pantalla externa para mantener el tamaño correcto de las apps abiertas. No se recopilan ni comparten datos.</string>
+</resources>

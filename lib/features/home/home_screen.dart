@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/platform/app_status_provider.dart';
-import '../../core/platform/desktop_mode_channel.dart';
+import '../../core/platform/external_touchpad_channel.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
+import '../../l10n/l10n.dart';
 import '../../models/session_state.dart';
 import '../settings/widgets/display_mode_picker.dart';
 
@@ -16,13 +17,17 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(appStatusProvider);
-    final api = ref.read(desktopModeApiProvider);
+    final api = ref.read(externalTouchpadApiProvider);
+    final l10n = context.l10n;
 
     // セッションのライフサイクルは Android ネイティブ側が所有する(仕様変更)。
     // このホーム画面が起動した時点で既にセッションがアクティブ(例: 常駐監視の
     // 通知をタップして起動した、または外部ディスプレイが既に接続済みだった)なら、
     // ユーザーが何も操作せずともタッチパッド画面へ追従する。
-    ref.listen(appStatusProvider.select((s) => s.sessionState.status), (previous, next) {
+    ref.listen(appStatusProvider.select((s) => s.sessionState.status), (
+      previous,
+      next,
+    ) {
       if (next == SessionStatus.active) {
         context.go('/touchpad');
       }
@@ -30,16 +35,16 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Desktop Touchpad'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: '設定',
+            tooltip: l10n.settingsTooltip,
             onPressed: () => context.push('/settings'),
           ),
           IconButton(
             icon: const Icon(Icons.bug_report_outlined),
-            tooltip: '診断',
+            tooltip: l10n.diagnosticsTooltip,
             onPressed: () => context.push('/diagnostics'),
           ),
         ],
@@ -53,15 +58,17 @@ class HomeScreen extends ConsumerWidget {
               icon: status.accessibilityEnabled
                   ? Icons.check_circle_outline
                   : Icons.error_outline,
-              label: 'Accessibility',
-              value: status.accessibilityEnabled ? '有効' : '無効（操作に必要です）',
+              label: l10n.accessibilityStatusLabel,
+              value: status.accessibilityEnabled
+                  ? l10n.statusEnabled
+                  : l10n.statusDisabledRequired,
               highlighted: !status.accessibilityEnabled,
             ),
             const SizedBox(height: AppDimens.spacingSmall),
             if (!status.accessibilityEnabled)
               FilledButton(
                 onPressed: () => api.openAccessibilitySettings(),
-                child: const Text('Accessibility設定を開く'),
+                child: Text(l10n.openAccessibilitySettings),
               ),
             const SizedBox(height: AppDimens.spacingLarge),
             InkWell(
@@ -72,10 +79,16 @@ class HomeScreen extends ConsumerWidget {
                 icon: status.hasExternalDisplay
                     ? Icons.desktop_windows_outlined
                     : Icons.desktop_access_disabled_outlined,
-                label: '外部ディスプレイ',
+                label: l10n.externalDisplayLabel,
                 value: status.hasExternalDisplay
-                    ? '${status.externalDisplays.map((d) => '${d.name} (${d.widthPx}×${d.heightPx})').join(', ')}(タップして解像度を変更)'
-                    : '未接続',
+                    ? l10n.displayConnectedValue(
+                        status.externalDisplays
+                            .map(
+                              (d) => '${d.name} (${d.widthPx}×${d.heightPx})',
+                            )
+                            .join(', '),
+                      )
+                    : l10n.displayNotConnected,
                 highlighted: false,
               ),
             ),
@@ -90,13 +103,12 @@ class HomeScreen extends ConsumerWidget {
                       if (context.mounted) context.push('/touchpad');
                     }
                   : null,
-              child: const Text('タッチパッドを開く'),
+              child: Text(l10n.openTouchpad),
             ),
             const SizedBox(height: AppDimens.spacingLarge),
-            const Text(
-              'サイドロード時に Accessibility 設定がグレーアウトする場合は、'
-              'アプリ情報から「制限付き設定を許可」を有効にしてください。',
-              style: TextStyle(color: AppColors.disabled, fontSize: 12),
+            Text(
+              l10n.sideloadHint,
+              style: const TextStyle(color: AppColors.disabled, fontSize: 12),
             ),
           ],
         ),
@@ -107,13 +119,18 @@ class HomeScreen extends ConsumerWidget {
 
 /// 外部ディスプレイの解像度/リフレッシュレートを選ぶモーダルシート。
 /// 設定画面の同項目と同じ `DisplayModePicker` を再利用する(DRY)。
-void _showDisplayModeSheet(BuildContext context, WidgetRef ref, AppStatus status) {
+void _showDisplayModeSheet(
+  BuildContext context,
+  WidgetRef ref,
+  AppStatus status,
+) {
   final settings = ref.read(settingsProvider).value;
   final notifier = ref.read(settingsProvider.notifier);
-  final displayId = settings?.preferredDisplayId ?? status.externalDisplays.first.id;
+  final displayId =
+      settings?.preferredDisplayId ?? status.externalDisplays.first.id;
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF0A0A0A),
+    backgroundColor: AppColors.surfaceElevated,
     builder: (sheetContext) => Padding(
       padding: const EdgeInsets.all(AppDimens.screenPadding),
       child: DisplayModePicker(

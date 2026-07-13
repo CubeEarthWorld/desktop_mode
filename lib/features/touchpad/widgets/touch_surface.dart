@@ -8,7 +8,11 @@ import 'touch_glow_painter.dart';
 /// タッチパッド入力面。生の PointerEvent を [TouchpadController] に橋渡しするだけで、
 /// ジェスチャの意味づけは一切行わない(認識はコントローラ配下の recognizer が担う)。
 class TouchSurface extends StatelessWidget {
-  const TouchSurface({super.key, required this.state, required this.controller});
+  const TouchSurface({
+    super.key,
+    required this.state,
+    required this.controller,
+  });
 
   final TouchpadState state;
   final TouchpadController controller;
@@ -17,21 +21,28 @@ class TouchSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return Listener(
       behavior: HitTestBehavior.opaque,
-      onPointerDown: (event) =>
-          controller.handlePointerDown(event.pointer, event.localPosition, event.timeStamp),
-      onPointerMove: (event) =>
-          controller.handlePointerMove(event.pointer, event.localPosition, event.timeStamp),
-      onPointerUp: (event) => controller.handlePointerUp(event.pointer, event.timeStamp),
+      onPointerDown: (event) => controller.handlePointerDown(
+        event.pointer,
+        event.localPosition,
+        event.timeStamp,
+      ),
+      onPointerMove: (event) => controller.handlePointerMove(
+        event.pointer,
+        event.localPosition,
+        event.timeStamp,
+      ),
+      onPointerUp: (event) => controller.handlePointerUp(
+        event.pointer,
+        event.localPosition,
+        event.timeStamp,
+      ),
       onPointerCancel: (event) => controller.handlePointerCancel(event.pointer),
       child: ColoredBox(
         color: AppColors.background,
         child: Stack(
           children: [
             const Center(child: CenterCrosshair()),
-            TouchGlowPainter(
-              activeTouches: state.activeTouches,
-              fadingGlows: state.fadingGlows,
-            ),
+            TouchGlowPainter(fadingGlows: state.fadingGlows),
           ],
         ),
       ),

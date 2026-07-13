@@ -540,36 +540,6 @@ abstract class AppLocalizations {
   /// **'No matching apps'**
   String get noMatchingApps;
 
-  /// No description provided for @windowModeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Window aspect ratio at launch'**
-  String get windowModeTooltip;
-
-  /// No description provided for @windowModeAuto.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto'**
-  String get windowModeAuto;
-
-  /// No description provided for @windowModePhonePortrait.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone portrait'**
-  String get windowModePhonePortrait;
-
-  /// No description provided for @windowModePhoneLandscape.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone landscape'**
-  String get windowModePhoneLandscape;
-
-  /// No description provided for @windowModeFullExternal.
-  ///
-  /// In en, this message translates to:
-  /// **'Full external screen'**
-  String get windowModeFullExternal;
-
   /// No description provided for @unlockByLongPress.
   ///
   /// In en, this message translates to:

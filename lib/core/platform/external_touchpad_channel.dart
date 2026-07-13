@@ -65,6 +65,10 @@ class ExternalTouchpadChannel implements ExternalTouchpadApi {
   Future<void> stopSession() => _method.invokeMethod('stopSession');
 
   @override
+  Future<void> dismissSoftKeyboard() =>
+      _method.invokeMethod('dismissSoftKeyboard');
+
+  @override
   Future<void> moveCursor(double dx, double dy) =>
       _method.invokeMethod('moveCursor', {'dx': dx, 'dy': dy});
 
@@ -137,7 +141,6 @@ class ExternalTouchpadChannel implements ExternalTouchpadApi {
     String? externalHomePackage,
     String? externalHomeActivity,
     int? preferredDisplayModeId,
-    Map<String, String> appWindowModes = const {},
   }) => _method.invokeMethod('updateConfig', {
     'pointerSpeed': pointerSpeed,
     'longPressDurationMs': longPressDurationMs,
@@ -146,7 +149,6 @@ class ExternalTouchpadChannel implements ExternalTouchpadApi {
     'externalHomePackage': externalHomePackage,
     'externalHomeActivity': externalHomeActivity,
     'preferredDisplayModeId': preferredDisplayModeId,
-    'appWindowModes': appWindowModes,
   });
 
   @override

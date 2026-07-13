@@ -13,5 +13,4 @@ data class InjectorConfig(
     val externalHomeActivity: String? = null,
     /** 接続先ディスプレイの [android.view.Display.Mode.getModeId]。null は端末の既定モード。 */
     val preferredDisplayModeId: Int? = null,
-    val appWindowModes: Map<String, String> = emptyMap(),
 )

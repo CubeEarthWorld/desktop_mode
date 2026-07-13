@@ -70,7 +70,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         updateConfig(
             externalHomePackage = config.externalHomePackage,
             externalHomeActivity = config.externalHomeActivity,
-            appWindowModes = config.appWindowModes,
         )
     }
     private val softKeyboardCoordinator = SoftKeyboardCoordinator(
@@ -364,7 +363,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
     /** タッチパッド上のソフトキーボード以外を触ったとき、現在の標準 IME を閉じる。 */
     fun dismissSoftKeyboard() = softKeyboardCoordinator.dismiss()
 
-    // ---- カーソルのアイドル非表示 ----    // ---- カーソルのアイドル非表示 ----
+    // ---- カーソルのアイドル非表示 ----
 
     private fun markCursorActivity() {
         if (cursorIdleHidden) {
@@ -574,7 +573,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         externalHomePackage: String?,
         externalHomeActivity: String?,
         preferredDisplayModeId: Int? = null,
-        appWindowModes: Map<String, String> = emptyMap(),
     ) {
         config = InjectorConfig(
             pointerSpeed = pointerSpeed,
@@ -584,7 +582,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
             externalHomePackage = externalHomePackage,
             externalHomeActivity = externalHomeActivity,
             preferredDisplayModeId = preferredDisplayModeId,
-            appWindowModes = appWindowModes,
         )
         updateAppLauncherConfig()
         if (!showCursor) {
@@ -611,7 +608,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         appLauncher.updateConfig(
             externalHomePackage = config.externalHomePackage,
             externalHomeActivity = config.externalHomeActivity,
-            appWindowModes = config.appWindowModes,
         )
     }
 
@@ -669,16 +665,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
             if (schemaVersion < 3 && longPressDurationMs == 1000L) {
                 longPressDurationMs = 500L
             }
-            val rawModes = obj.optJSONObject("appWindowModes")
-            val appWindowModes = buildMap {
-                if (rawModes != null) {
-                    val keys = rawModes.keys()
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        put(key, rawModes.optString(key, "auto"))
-                    }
-                }
-            }
             InjectorConfig(
                 pointerSpeed = obj.optDouble("pointerSpeed", 1.8).toFloat(),
                 longPressDurationMs = longPressDurationMs,
@@ -687,7 +673,6 @@ class ExternalTouchpadController private constructor(private val appContext: Con
                 externalHomePackage = obj.optNullableString("externalHomePackage"),
                 externalHomeActivity = obj.optNullableString("externalHomeActivity"),
                 preferredDisplayModeId = obj.optNullableInt("preferredDisplayModeId"),
-                appWindowModes = appWindowModes,
             )
         } catch (_: Throwable) {
             InjectorConfig()

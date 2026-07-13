@@ -49,6 +49,11 @@ class ExternalTouchpadChannel(
                     result.success(null)
                 }
 
+                "dismissSoftKeyboard" -> {
+                    controller.dismissSoftKeyboard()
+                    result.success(null)
+                }
+
                 "moveCursor" -> {
                     val dx = (call.argument<Number>("dx") ?: 0).toFloat()
                     val dy = (call.argument<Number>("dy") ?: 0).toFloat()
@@ -111,7 +116,6 @@ class ExternalTouchpadChannel(
                     val externalHomePackage = call.argument<String>("externalHomePackage")
                     val externalHomeActivity = call.argument<String>("externalHomeActivity")
                     val preferredDisplayModeId = call.argument<Int>("preferredDisplayModeId")
-                    val appWindowModes = call.argument<Map<String, String>>("appWindowModes") ?: emptyMap()
                     controller.updateConfig(
                         pointerSpeed,
                         longPressDurationMs,
@@ -120,7 +124,6 @@ class ExternalTouchpadChannel(
                         externalHomePackage,
                         externalHomeActivity,
                         preferredDisplayModeId,
-                        appWindowModes,
                     )
                     result.success(null)
                 }

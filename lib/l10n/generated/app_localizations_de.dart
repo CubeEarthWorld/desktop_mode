@@ -250,21 +250,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noMatchingApps => 'Keine passenden Apps';
 
   @override
-  String get windowModeTooltip => 'Fensterformat beim Start';
-
-  @override
-  String get windowModeAuto => 'Automatisch';
-
-  @override
-  String get windowModePhonePortrait => 'Smartphone hochkant';
-
-  @override
-  String get windowModePhoneLandscape => 'Smartphone quer';
-
-  @override
-  String get windowModeFullExternal => 'Gesamtes externes Display';
-
-  @override
   String get unlockByLongPress => 'Zum Entsperren gedrückt halten';
 
   @override

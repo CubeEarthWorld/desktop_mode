@@ -17,6 +17,12 @@ import kotlin.math.roundToInt
 
 private const val TAG = "ExternalAppLauncher"
 
+private enum class LaunchLayout {
+    PHONE_PORTRAIT,
+    PHONE_LANDSCAPE,
+    FULL_EXTERNAL,
+}
+
 private data class ExpectedLaunchBounds(
     val packageName: String?,
     val displayId: Int,
@@ -40,7 +46,6 @@ class ExternalAppLauncher(
 
     private var externalHomePackage: String? = null
     private var externalHomeActivity: String? = null
-    private var appWindowModes: Map<String, String> = emptyMap()
     private var pendingLaunchVerification: ExpectedLaunchBounds? = null
 
     var launchBoundsWarning: String? = null
@@ -49,11 +54,9 @@ class ExternalAppLauncher(
     fun updateConfig(
         externalHomePackage: String?,
         externalHomeActivity: String?,
-        appWindowModes: Map<String, String>,
     ) {
         this.externalHomePackage = externalHomePackage
         this.externalHomeActivity = externalHomeActivity
-        this.appWindowModes = appWindowModes
     }
 
     fun clearPendingVerification() {
@@ -157,20 +160,13 @@ class ExternalAppLauncher(
 
     private fun computeLaunchBounds(display: Display, info: ActivityInfo?): Rect? {
         launchBoundsWarning = null
-        val componentKey = info?.let { "${it.packageName}/${it.name}" }
-        val configuredMode = componentKey?.let { appWindowModes[it] } ?: "auto"
         val orientation = info?.screenOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        val resolvedMode = when (configuredMode) {
-            "phonePortrait" -> "phonePortrait"
-            "phoneLandscape" -> "phoneLandscape"
-            "fullExternal" -> "fullExternal"
-            else -> when {
-                isEffectivelyPortrait(orientation) -> "phonePortrait"
-                isEffectivelyLandscape(orientation) -> "phoneLandscape"
-                else -> "fullExternal"
-            }
+        val layout = when {
+            isEffectivelyPortrait(orientation) -> LaunchLayout.PHONE_PORTRAIT
+            isEffectivelyLandscape(orientation) -> LaunchLayout.PHONE_LANDSCAPE
+            else -> LaunchLayout.FULL_EXTERNAL
         }
-        if (resolvedMode == "fullExternal") return null
+        if (layout == LaunchLayout.FULL_EXTERNAL) return null
         if (!supportsLaunchBounds()) {
             launchBoundsWarning =
                 "launch_bounds_capability_unreported: requesting phone aspect ratio anyway"
@@ -187,7 +183,7 @@ class ExternalAppLauncher(
 
         val shortSide = minOf(phone.width(), phone.height()).toFloat()
         val longSide = maxOf(phone.width(), phone.height()).toFloat()
-        val desiredAspect = if (resolvedMode == "phonePortrait") {
+        val desiredAspect = if (layout == LaunchLayout.PHONE_PORTRAIT) {
             shortSide / longSide
         } else {
             longSide / shortSide

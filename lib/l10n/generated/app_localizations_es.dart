@@ -252,21 +252,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noMatchingApps => 'No hay apps que coincidan';
 
   @override
-  String get windowModeTooltip => 'Proporción de la ventana al iniciar';
-
-  @override
-  String get windowModeAuto => 'Automático';
-
-  @override
-  String get windowModePhonePortrait => 'Teléfono vertical';
-
-  @override
-  String get windowModePhoneLandscape => 'Teléfono horizontal';
-
-  @override
-  String get windowModeFullExternal => 'Pantalla externa completa';
-
-  @override
   String get unlockByLongPress => 'Mantén pulsado para desbloquear';
 
   @override

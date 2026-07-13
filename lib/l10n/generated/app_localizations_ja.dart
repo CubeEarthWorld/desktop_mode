@@ -240,21 +240,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get noMatchingApps => '該当するアプリがありません';
 
   @override
-  String get windowModeTooltip => '起動時の画面比率';
-
-  @override
-  String get windowModeAuto => '自動';
-
-  @override
-  String get windowModePhonePortrait => 'スマートフォン縦';
-
-  @override
-  String get windowModePhoneLandscape => 'スマートフォン横';
-
-  @override
-  String get windowModeFullExternal => '外部画面全体';
-
-  @override
   String get unlockByLongPress => '長押しで解除';
 
   @override

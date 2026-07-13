@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/external_touchpad_channel.dart';
-import '../../../core/settings/settings_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimens.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/app_window_mode.dart';
 import '../../../models/home_app_info.dart';
 
 /// Native keeps a short-lived result cache, while auto-dispose releases PNG
@@ -47,13 +46,18 @@ class _AppListSheetContent extends ConsumerStatefulWidget {
 }
 
 class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
+  final _searchFocusNode = FocusNode(debugLabel: 'appListSearch');
   String _query = '';
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final appsValue = ref.watch(_installedAppsProvider);
-    // Watching settings once keeps mode badges and popup selections current.
-    final settings = ref.watch(settingsProvider).value;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.72,
@@ -89,6 +93,9 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
             ),
             const SizedBox(height: AppDimens.spacingSmall),
             TextField(
+              focusNode: _searchFocusNode,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
               style: const TextStyle(color: AppColors.foreground),
               decoration: InputDecoration(
                 hintText: context.l10n.searchHint,
@@ -126,6 +133,9 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
 
                   return GridView.builder(
                     controller: scrollController,
+                    scrollCacheExtent: const ScrollCacheExtent.pixels(96),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.only(
                       top: AppDimens.spacingSmall,
                       bottom: AppDimens.spacingLarge,
@@ -140,24 +150,9 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
                     itemCount: apps.length,
                     itemBuilder: (context, index) {
                       final app = apps[index];
-                      final mode =
-                          settings?.windowModeFor(
-                            app.packageName,
-                            app.activityName,
-                          ) ??
-                          AppWindowMode.auto;
-                      final icon = ref
-                          .watch(
-                            _appIconProvider((
-                              packageName: app.packageName,
-                              activityName: app.activityName,
-                            )),
-                          )
-                          .value;
                       return _AppGridItem(
+                        key: ValueKey('${app.packageName}/${app.activityName}'),
                         app: app,
-                        iconPng: app.iconPng ?? icon,
-                        mode: mode,
                         onLaunch: () {
                           unawaited(
                             ref
@@ -166,8 +161,6 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
                           );
                           Navigator.of(context).pop();
                         },
-                        onModeSelected: (selected) =>
-                            _setWindowMode(app, selected),
                       );
                     },
                   );
@@ -179,31 +172,13 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
       ),
     );
   }
-
-  Future<void> _setWindowMode(HomeAppInfo app, AppWindowMode mode) async {
-    await ref
-        .read(settingsProvider.notifier)
-        .updateSettings(
-          (settings) =>
-              settings.withWindowMode(app.packageName, app.activityName, mode),
-        );
-  }
 }
 
 class _AppGridItem extends StatelessWidget {
-  const _AppGridItem({
-    required this.app,
-    required this.iconPng,
-    required this.mode,
-    required this.onLaunch,
-    required this.onModeSelected,
-  });
+  const _AppGridItem({super.key, required this.app, required this.onLaunch});
 
   final HomeAppInfo app;
-  final Uint8List? iconPng;
-  final AppWindowMode mode;
   final VoidCallback onLaunch;
-  final ValueChanged<AppWindowMode> onModeSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -218,45 +193,7 @@ class _AppGridItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 56,
-                height: 54,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    _AppIcon(iconPng: iconPng),
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: PopupMenuButton<AppWindowMode>(
-                        tooltip: context.l10n.windowModeTooltip,
-                        initialValue: mode,
-                        padding: EdgeInsets.zero,
-                        iconSize: 16,
-                        icon: Icon(
-                          Icons.aspect_ratio,
-                          size: 16,
-                          color: mode == AppWindowMode.auto
-                              ? AppColors.disabled
-                              : AppColors.foreground,
-                        ),
-                        onSelected: onModeSelected,
-                        itemBuilder: (menuContext) => AppWindowMode.values
-                            .map(
-                              (value) => PopupMenuItem(
-                                value: value,
-                                child: Text(
-                                  _windowModeLabel(menuContext.l10n, value),
-                                ),
-                              ),
-                            )
-                            .toList(growable: false),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _AppIcon(app: app),
               const SizedBox(height: 3),
               Text(
                 app.label,
@@ -275,24 +212,20 @@ class _AppGridItem extends StatelessWidget {
       ),
     );
   }
-
-  static String _windowModeLabel(AppLocalizations l10n, AppWindowMode mode) =>
-      switch (mode) {
-        AppWindowMode.auto => l10n.windowModeAuto,
-        AppWindowMode.phonePortrait => l10n.windowModePhonePortrait,
-        AppWindowMode.phoneLandscape => l10n.windowModePhoneLandscape,
-        AppWindowMode.fullExternal => l10n.windowModeFullExternal,
-      };
 }
 
-class _AppIcon extends StatelessWidget {
-  const _AppIcon({required this.iconPng});
+class _AppIcon extends ConsumerWidget {
+  const _AppIcon({required this.app});
 
-  final Uint8List? iconPng;
+  final HomeAppInfo app;
 
   @override
-  Widget build(BuildContext context) {
-    final bytes = iconPng;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final component = (
+      packageName: app.packageName,
+      activityName: app.activityName,
+    );
+    final bytes = app.iconPng ?? ref.watch(_appIconProvider(component)).value;
     if (bytes == null) return _fallback();
     return Image.memory(
       bytes,

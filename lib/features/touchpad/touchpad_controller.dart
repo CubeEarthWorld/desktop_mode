@@ -118,6 +118,9 @@ class TouchpadController extends Notifier<TouchpadState> {
       return;
     }
     _armIdleLockTimer();
+    if (_touchPositions.isEmpty) {
+      unawaited(_api.dismissSoftKeyboard().catchError((Object _) {}));
+    }
     _touchPositions[id] = position;
     _applyResults(_recognizer.onPointerDown(id, position, timestamp));
 

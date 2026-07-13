@@ -17,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FakeExternalTouchpadApi implements ExternalTouchpadApi {
   final List<String> inputCalls = [];
+  int dismissSoftKeyboardCalls = 0;
 
   @override
   Future<List<DisplayInfo>> getDisplays() async => const [];
@@ -30,6 +31,11 @@ class _FakeExternalTouchpadApi implements ExternalTouchpadApi {
       SessionState.idleState;
   @override
   Future<void> stopSession() async {}
+  @override
+  Future<void> dismissSoftKeyboard() async {
+    dismissSoftKeyboardCalls++;
+  }
+
   @override
   Future<void> moveCursor(double dx, double dy) async =>
       inputCalls.add('cursor:$dx,$dy');
@@ -86,7 +92,6 @@ class _FakeExternalTouchpadApi implements ExternalTouchpadApi {
     String? externalHomePackage,
     String? externalHomeActivity,
     int? preferredDisplayModeId,
-    Map<String, String> appWindowModes = const {},
   }) async {}
   @override
   Future<List<HomeAppInfo>> getHomeApps() async => const [];
@@ -164,6 +169,7 @@ void main() {
     await tester.pump();
 
     expect(setup.api.inputCalls, isEmpty);
+    expect(setup.api.dismissSoftKeyboardCalls, 1);
     expect(
       setup.container.read(touchpadControllerProvider).fadingGlows,
       isEmpty,

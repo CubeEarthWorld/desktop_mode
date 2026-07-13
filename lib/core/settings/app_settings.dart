@@ -1,5 +1,3 @@
-import '../../models/app_window_mode.dart';
-
 class AppSettings {
   const AppSettings({
     this.autoStart = true,
@@ -17,7 +15,6 @@ class AppSettings {
     this.externalHomePackage,
     this.externalHomeActivity,
     this.preferredDisplayModeId,
-    this.appWindowModes = const {},
   });
 
   factory AppSettings.fromJson(Map<String, Object?> json) {
@@ -32,16 +29,6 @@ class AppSettings {
     if (schemaVersion < 3 && longPressDurationMs == 1000) {
       longPressDurationMs = defaultLongPressDurationMs;
     }
-    final rawWindowModes = json['appWindowModes'];
-    final windowModes = <String, AppWindowMode>{};
-    if (rawWindowModes is Map) {
-      for (final entry in rawWindowModes.entries) {
-        if (entry.key is! String || entry.value is! String) continue;
-        final mode = AppWindowMode.fromWireName(entry.value as String);
-        if (mode != AppWindowMode.auto) windowModes[entry.key as String] = mode;
-      }
-    }
-
     return AppSettings(
       autoStart: json['autoStart'] as bool? ?? true,
       residentMonitoring: json['residentMonitoring'] as bool? ?? false,
@@ -64,11 +51,10 @@ class AppSettings {
       externalHomePackage: json['externalHomePackage'] as String?,
       externalHomeActivity: json['externalHomeActivity'] as String?,
       preferredDisplayModeId: json['preferredDisplayModeId'] as int?,
-      appWindowModes: Map.unmodifiable(windowModes),
     );
   }
 
-  static const currentSchemaVersion = 4;
+  static const currentSchemaVersion = 5;
   static const pointerSpeedMin = 0.5;
   static const pointerSpeedMax = 4.0;
   static const longPressDurationMinMs = 400;
@@ -80,7 +66,7 @@ class AppSettings {
   static const cursorIdleTimeoutMinMs = 0;
   static const cursorIdleTimeoutMaxMs = 10000;
   static const defaultTouchLockIdleTimeoutSeconds = 30;
-  static const touchLockIdleTimeoutOptionsSeconds = [5, 10, 30];
+  static const touchLockIdleTimeoutOptionsSeconds = <int>[5, 10, 30];
 
   final bool autoStart;
   final bool residentMonitoring;
@@ -97,11 +83,6 @@ class AppSettings {
   final String? externalHomePackage;
   final String? externalHomeActivity;
   final int? preferredDisplayModeId;
-  final Map<String, AppWindowMode> appWindowModes;
-
-  AppWindowMode windowModeFor(String packageName, String activityName) =>
-      appWindowModes['$packageName/$activityName'] ?? AppWindowMode.auto;
-
   Map<String, Object?> toJson() => {
     'schemaVersion': currentSchemaVersion,
     'autoStart': autoStart,
@@ -119,9 +100,6 @@ class AppSettings {
     'externalHomePackage': externalHomePackage,
     'externalHomeActivity': externalHomeActivity,
     'preferredDisplayModeId': preferredDisplayModeId,
-    'appWindowModes': appWindowModes.map(
-      (key, value) => MapEntry(key, value.name),
-    ),
   };
 
   AppSettings copyWith({
@@ -143,7 +121,6 @@ class AppSettings {
     bool clearExternalHomeApp = false,
     int? preferredDisplayModeId,
     bool clearPreferredDisplayModeId = false,
-    Map<String, AppWindowMode>? appWindowModes,
   }) => AppSettings(
     autoStart: autoStart ?? this.autoStart,
     residentMonitoring: residentMonitoring ?? this.residentMonitoring,
@@ -170,23 +147,7 @@ class AppSettings {
     preferredDisplayModeId: clearPreferredDisplayModeId
         ? null
         : (preferredDisplayModeId ?? this.preferredDisplayModeId),
-    appWindowModes: appWindowModes ?? this.appWindowModes,
   );
-
-  AppSettings withWindowMode(
-    String packageName,
-    String activityName,
-    AppWindowMode mode,
-  ) {
-    final key = '$packageName/$activityName';
-    final next = Map<String, AppWindowMode>.from(appWindowModes);
-    if (mode == AppWindowMode.auto) {
-      next.remove(key);
-    } else {
-      next[key] = mode;
-    }
-    return copyWith(appWindowModes: Map.unmodifiable(next));
-  }
 }
 
 int _touchLockIdleTimeoutFromJson(Object? value) {

@@ -38,8 +38,5 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
         externalHomePackage: settings.externalHomePackage,
         externalHomeActivity: settings.externalHomeActivity,
         preferredDisplayModeId: settings.preferredDisplayModeId,
-        appWindowModes: settings.appWindowModes.map(
-          (key, value) => MapEntry(key, value.name),
-        ),
       );
 }

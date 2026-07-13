@@ -31,6 +31,7 @@ abstract interface class ExternalTouchpadApi {
   Future<SessionState> getSessionState();
   Future<SessionState> startSession({int? displayId});
   Future<void> stopSession();
+  Future<void> dismissSoftKeyboard();
 
   Future<void> moveCursor(double dx, double dy);
   Future<GestureAck> commitPointerAction(
@@ -51,7 +52,6 @@ abstract interface class ExternalTouchpadApi {
     String? externalHomePackage,
     String? externalHomeActivity,
     int? preferredDisplayModeId,
-    Map<String, String> appWindowModes = const {},
   });
   Future<DiagnosticsInfo> getDiagnostics();
   Future<bool> isAccessibilityEnabled();

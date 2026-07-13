@@ -240,21 +240,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get noMatchingApps => '해당하는 앱이 없습니다';
 
   @override
-  String get windowModeTooltip => '실행 시 화면 비율';
-
-  @override
-  String get windowModeAuto => '자동';
-
-  @override
-  String get windowModePhonePortrait => '스마트폰 세로';
-
-  @override
-  String get windowModePhoneLandscape => '스마트폰 가로';
-
-  @override
-  String get windowModeFullExternal => '외부 화면 전체';
-
-  @override
   String get unlockByLongPress => '길게 눌러 잠금 해제';
 
   @override

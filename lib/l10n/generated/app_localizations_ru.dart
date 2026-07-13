@@ -251,21 +251,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noMatchingApps => 'Подходящих приложений нет';
 
   @override
-  String get windowModeTooltip => 'Пропорции окна при запуске';
-
-  @override
-  String get windowModeAuto => 'Автоматически';
-
-  @override
-  String get windowModePhonePortrait => 'Телефон вертикально';
-
-  @override
-  String get windowModePhoneLandscape => 'Телефон горизонтально';
-
-  @override
-  String get windowModeFullExternal => 'Весь внешний экран';
-
-  @override
   String get unlockByLongPress => 'Удерживайте для разблокировки';
 
   @override

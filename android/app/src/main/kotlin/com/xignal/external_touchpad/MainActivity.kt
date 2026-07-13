@@ -2,7 +2,6 @@ package com.xignal.external_touchpad
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.WindowManager
 import com.xignal.external_touchpad.platform.ExternalTouchpadChannel
 import io.flutter.embedding.android.FlutterActivity
@@ -14,15 +13,6 @@ private const val CONTROL_CHANNEL = "external_touchpad/control"
 private const val EVENT_CHANNEL = "external_touchpad/display_events"
 
 class MainActivity : FlutterActivity() {
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        // IME は別ウィンドウなので、ここへ届く ACTION_DOWN は標準キーボード以外の
-        // アプリ領域へのタッチだけ。Flutter に渡す前に閉じることで遅延も発生しない。
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            ExternalTouchpadController.getInstance(applicationContext).dismissSoftKeyboard()
-        }
-        return super.dispatchTouchEvent(event)
-    }
-
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 

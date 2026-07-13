@@ -1,5 +1,4 @@
 import 'package:external_touchpad/core/settings/app_settings.dart';
-import 'package:external_touchpad/models/app_window_mode.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -21,9 +20,6 @@ void main() {
         externalHomePackage: 'com.teslacoilsw.launcher',
         externalHomeActivity: 'com.teslacoilsw.launcher.NovaLauncher',
         preferredDisplayModeId: 3,
-        appWindowModes: {
-          'com.example/.PortraitActivity': AppWindowMode.phonePortrait,
-        },
       );
 
       final restored = AppSettings.fromJson(original.toJson());
@@ -49,7 +45,6 @@ void main() {
       expect(restored.externalHomePackage, original.externalHomePackage);
       expect(restored.externalHomeActivity, original.externalHomeActivity);
       expect(restored.preferredDisplayModeId, original.preferredDisplayModeId);
-      expect(restored.appWindowModes, original.appWindowModes);
     });
 
     test('fromJson falls back to defaults for missing fields', () {
@@ -105,26 +100,6 @@ void main() {
         }).longPressDurationMs,
         1000,
       );
-    });
-
-    test('window mode auto removes a component override', () {
-      const settings = AppSettings();
-      final overridden = settings.withWindowMode(
-        'com.example',
-        '.MainActivity',
-        AppWindowMode.phonePortrait,
-      );
-      final cleared = overridden.withWindowMode(
-        'com.example',
-        '.MainActivity',
-        AppWindowMode.auto,
-      );
-
-      expect(
-        overridden.windowModeFor('com.example', '.MainActivity'),
-        AppWindowMode.phonePortrait,
-      );
-      expect(cleared.appWindowModes, isEmpty);
     });
 
     test('copyWith clearPreferredDisplayId clears the value', () {

@@ -239,21 +239,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noMatchingApps => '没有符合条件的应用';
 
   @override
-  String get windowModeTooltip => '启动时的窗口比例';
-
-  @override
-  String get windowModeAuto => '自动';
-
-  @override
-  String get windowModePhonePortrait => '手机竖屏';
-
-  @override
-  String get windowModePhoneLandscape => '手机横屏';
-
-  @override
-  String get windowModeFullExternal => '外接屏幕全屏';
-
-  @override
   String get unlockByLongPress => '长按解锁';
 
   @override

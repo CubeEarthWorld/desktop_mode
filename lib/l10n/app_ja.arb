@@ -1,6 +1,7 @@
 {
   "@@locale": "ja",
   "appTitle": "外部ディスプレイ用タッチパッド",
+  "appTitleShort": "タッチパッド",
   "displayDisconnected": "外部ディスプレイの接続が切れました",
   "sessionEndedUnexpectedly": "セッションが予期せず終了しました ({reason})",
   "settingsTooltip": "設定",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "長押しで解除",
   "sectionAbout": "このアプリについて",
   "openSourceLicenses": "オープンソースライセンス",
-  "openSourceLicensesDescription": "このアプリで使用しているオープンソースソフトウェアのライセンス情報"
+  "openSourceLicensesDescription": "このアプリで使用しているオープンソースソフトウェアのライセンス情報",
+  "resetSettingsButton": "デフォルトに戻す",
+  "resetSettingsConfirmTitle": "設定をリセットしますか？",
+  "resetSettingsConfirmMessage": "すべての設定が既定値に戻ります。",
+  "resetSettingsCancel": "キャンセル",
+  "resetSettingsConfirmAction": "リセット",
+  "resetSettingsDone": "設定を既定値にリセットしました"
 }

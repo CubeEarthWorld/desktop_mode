@@ -1,6 +1,7 @@
 {
   "@@locale": "zh",
   "appTitle": "外接显示器触控板",
+  "appTitleShort": "触控板",
   "displayDisconnected": "外接显示器已断开连接",
   "sessionEndedUnexpectedly": "会话意外结束 ({reason})",
   "settingsTooltip": "设置",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "长按解锁",
   "sectionAbout": "关于",
   "openSourceLicenses": "开源许可",
-  "openSourceLicensesDescription": "本应用所使用开源软件的许可信息"
+  "openSourceLicensesDescription": "本应用所使用开源软件的许可信息",
+  "resetSettingsButton": "恢复默认设置",
+  "resetSettingsConfirmTitle": "要恢复默认设置吗？",
+  "resetSettingsConfirmMessage": "所有设置将恢复为默认值。",
+  "resetSettingsCancel": "取消",
+  "resetSettingsConfirmAction": "恢复",
+  "resetSettingsDone": "设置已恢复为默认值"
 }

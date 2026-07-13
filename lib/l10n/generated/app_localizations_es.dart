@@ -12,6 +12,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appTitle => 'Panel táctil para pantalla externa';
 
   @override
+  String get appTitleShort => 'Panel táctil';
+
+  @override
   String get displayDisconnected => 'Se desconectó la pantalla externa';
 
   @override
@@ -263,4 +266,24 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get openSourceLicensesDescription =>
       'Avisos de licencia del software de código abierto utilizado en esta aplicación';
+
+  @override
+  String get resetSettingsButton => 'Restablecer valores predeterminados';
+
+  @override
+  String get resetSettingsConfirmTitle => '¿Restablecer los ajustes?';
+
+  @override
+  String get resetSettingsConfirmMessage =>
+      'Todos los ajustes volverán a sus valores predeterminados.';
+
+  @override
+  String get resetSettingsCancel => 'Cancelar';
+
+  @override
+  String get resetSettingsConfirmAction => 'Restablecer';
+
+  @override
+  String get resetSettingsDone =>
+      'Los ajustes se han restablecido a los valores predeterminados';
 }

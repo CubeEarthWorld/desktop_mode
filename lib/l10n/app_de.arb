@@ -1,6 +1,7 @@
 {
   "@@locale": "de",
   "appTitle": "Touchpad für externes Display",
+  "appTitleShort": "Touchpad",
   "displayDisconnected": "Verbindung zum externen Display getrennt",
   "sessionEndedUnexpectedly": "Die Sitzung wurde unerwartet beendet ({reason})",
   "settingsTooltip": "Einstellungen",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "Zum Entsperren gedrückt halten",
   "sectionAbout": "Info",
   "openSourceLicenses": "Open-Source-Lizenzen",
-  "openSourceLicensesDescription": "Lizenzhinweise für die in dieser App verwendete Open-Source-Software"
+  "openSourceLicensesDescription": "Lizenzhinweise für die in dieser App verwendete Open-Source-Software",
+  "resetSettingsButton": "Auf Standard zurücksetzen",
+  "resetSettingsConfirmTitle": "Einstellungen zurücksetzen?",
+  "resetSettingsConfirmMessage": "Alle Einstellungen werden auf die Standardwerte zurückgesetzt.",
+  "resetSettingsCancel": "Abbrechen",
+  "resetSettingsConfirmAction": "Zurücksetzen",
+  "resetSettingsDone": "Die Einstellungen wurden auf die Standardwerte zurückgesetzt"
 }

@@ -1,6 +1,6 @@
 class AppSettings {
   const AppSettings({
-    this.autoStart = true,
+    this.autoStart = false,
     this.residentMonitoring = false,
     this.showCursor = true,
     this.showTouchGlow = true,
@@ -30,7 +30,7 @@ class AppSettings {
       longPressDurationMs = defaultLongPressDurationMs;
     }
     return AppSettings(
-      autoStart: json['autoStart'] as bool? ?? true,
+      autoStart: json['autoStart'] as bool? ?? false,
       residentMonitoring: json['residentMonitoring'] as bool? ?? false,
       showCursor: json['showCursor'] as bool? ?? true,
       showTouchGlow: json['showTouchGlow'] as bool? ?? true,

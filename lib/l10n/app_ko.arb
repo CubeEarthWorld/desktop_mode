@@ -1,6 +1,7 @@
 {
   "@@locale": "ko",
   "appTitle": "외부 디스플레이 터치패드",
+  "appTitleShort": "터치패드",
   "displayDisconnected": "외부 디스플레이 연결이 끊어졌습니다",
   "sessionEndedUnexpectedly": "세션이 예기치 않게 종료되었습니다 ({reason})",
   "settingsTooltip": "설정",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "길게 눌러 잠금 해제",
   "sectionAbout": "앱 정보",
   "openSourceLicenses": "오픈 소스 라이선스",
-  "openSourceLicensesDescription": "이 앱에서 사용하는 오픈 소스 소프트웨어의 라이선스 정보"
+  "openSourceLicensesDescription": "이 앱에서 사용하는 오픈 소스 소프트웨어의 라이선스 정보",
+  "resetSettingsButton": "기본값으로 재설정",
+  "resetSettingsConfirmTitle": "설정을 재설정하시겠습니까?",
+  "resetSettingsConfirmMessage": "모든 설정이 기본값으로 복원됩니다.",
+  "resetSettingsCancel": "취소",
+  "resetSettingsConfirmAction": "재설정",
+  "resetSettingsDone": "설정이 기본값으로 재설정되었습니다"
 }

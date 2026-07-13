@@ -216,10 +216,50 @@ class SettingsScreen extends ConsumerWidget {
                 applicationName: l10n.appTitle,
               ),
             ),
+            const _SectionDivider(),
+            Center(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.restore),
+                label: Text(l10n.resetSettingsButton),
+                onPressed: () => _confirmResetSettings(context, notifier, l10n),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// 確認ダイアログを挟んでから設定を既定値へ戻す(誤操作防止)。
+Future<void> _confirmResetSettings(
+  BuildContext context,
+  SettingsNotifier notifier,
+  AppLocalizations l10n,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.resetSettingsConfirmTitle),
+      content: Text(l10n.resetSettingsConfirmMessage),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(l10n.resetSettingsCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l10n.resetSettingsConfirmAction),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  await notifier.resetToDefaults();
+  if (context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.resetSettingsDone)));
   }
 }
 

@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'External Display Touchpad';
 
   @override
+  String get appTitleShort => 'Touchpad';
+
+  @override
   String get displayDisconnected => 'External display disconnected';
 
   @override
@@ -259,4 +262,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get openSourceLicensesDescription =>
       'License notices for open-source software used in this app';
+
+  @override
+  String get resetSettingsButton => 'Reset to defaults';
+
+  @override
+  String get resetSettingsConfirmTitle => 'Reset settings?';
+
+  @override
+  String get resetSettingsConfirmMessage =>
+      'All settings will be restored to their default values.';
+
+  @override
+  String get resetSettingsCancel => 'Cancel';
+
+  @override
+  String get resetSettingsConfirmAction => 'Reset';
+
+  @override
+  String get resetSettingsDone => 'Settings have been reset to defaults';
 }

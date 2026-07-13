@@ -1,6 +1,7 @@
 {
   "@@locale": "ru",
   "appTitle": "Тачпад для внешнего дисплея",
+  "appTitleShort": "Тачпад",
   "displayDisconnected": "Внешний дисплей отключён",
   "sessionEndedUnexpectedly": "Сеанс неожиданно завершился ({reason})",
   "settingsTooltip": "Настройки",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "Удерживайте для разблокировки",
   "sectionAbout": "О приложении",
   "openSourceLicenses": "Лицензии открытого ПО",
-  "openSourceLicensesDescription": "Сведения о лицензиях открытого программного обеспечения, используемого в приложении"
+  "openSourceLicensesDescription": "Сведения о лицензиях открытого программного обеспечения, используемого в приложении",
+  "resetSettingsButton": "Сбросить настройки",
+  "resetSettingsConfirmTitle": "Сбросить настройки?",
+  "resetSettingsConfirmMessage": "Все настройки будут восстановлены до значений по умолчанию.",
+  "resetSettingsCancel": "Отмена",
+  "resetSettingsConfirmAction": "Сбросить",
+  "resetSettingsDone": "Настройки сброшены до значений по умолчанию"
 }

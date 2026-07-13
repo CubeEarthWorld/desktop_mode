@@ -50,7 +50,7 @@ void main() {
     test('fromJson falls back to defaults for missing fields', () {
       final restored = AppSettings.fromJson(const {});
 
-      expect(restored.autoStart, true);
+      expect(restored.autoStart, false);
       expect(restored.pointerSpeed, 1.8);
       expect(
         restored.longPressDurationMs,

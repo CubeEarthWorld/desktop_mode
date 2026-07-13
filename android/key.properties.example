@@ -1,0 +1,5 @@
+# Copy this file to android/key.properties and keep the real values private.
+storePassword=replace-with-a-strong-password
+keyPassword=replace-with-a-strong-password
+keyAlias=external-display-touchpad
+storeFile=release-key.jks

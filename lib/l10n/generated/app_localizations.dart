@@ -114,6 +114,12 @@ abstract class AppLocalizations {
   /// **'External Display Touchpad'**
   String get appTitle;
 
+  /// Short app name shown on the home screen's app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Touchpad'**
+  String get appTitleShort;
+
   /// Snackbar shown when the external display is unplugged
   ///
   /// In en, this message translates to:
@@ -563,6 +569,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'License notices for open-source software used in this app'**
   String get openSourceLicensesDescription;
+
+  /// No description provided for @resetSettingsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get resetSettingsButton;
+
+  /// No description provided for @resetSettingsConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset settings?'**
+  String get resetSettingsConfirmTitle;
+
+  /// No description provided for @resetSettingsConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All settings will be restored to their default values.'**
+  String get resetSettingsConfirmMessage;
+
+  /// No description provided for @resetSettingsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get resetSettingsCancel;
+
+  /// No description provided for @resetSettingsConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetSettingsConfirmAction;
+
+  /// No description provided for @resetSettingsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings have been reset to defaults'**
+  String get resetSettingsDone;
 }
 
 class _AppLocalizationsDelegate

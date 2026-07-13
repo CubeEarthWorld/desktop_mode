@@ -12,6 +12,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitle => '外接显示器触控板';
 
   @override
+  String get appTitleShort => '触控板';
+
+  @override
   String get displayDisconnected => '外接显示器已断开连接';
 
   @override
@@ -249,4 +252,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get openSourceLicensesDescription => '本应用所使用开源软件的许可信息';
+
+  @override
+  String get resetSettingsButton => '恢复默认设置';
+
+  @override
+  String get resetSettingsConfirmTitle => '要恢复默认设置吗？';
+
+  @override
+  String get resetSettingsConfirmMessage => '所有设置将恢复为默认值。';
+
+  @override
+  String get resetSettingsCancel => '取消';
+
+  @override
+  String get resetSettingsConfirmAction => '恢复';
+
+  @override
+  String get resetSettingsDone => '设置已恢复为默认值';
 }

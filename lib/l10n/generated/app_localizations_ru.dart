@@ -12,6 +12,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appTitle => 'Тачпад для внешнего дисплея';
 
   @override
+  String get appTitleShort => 'Тачпад';
+
+  @override
   String get displayDisconnected => 'Внешний дисплей отключён';
 
   @override
@@ -262,4 +265,23 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get openSourceLicensesDescription =>
       'Сведения о лицензиях открытого программного обеспечения, используемого в приложении';
+
+  @override
+  String get resetSettingsButton => 'Сбросить настройки';
+
+  @override
+  String get resetSettingsConfirmTitle => 'Сбросить настройки?';
+
+  @override
+  String get resetSettingsConfirmMessage =>
+      'Все настройки будут восстановлены до значений по умолчанию.';
+
+  @override
+  String get resetSettingsCancel => 'Отмена';
+
+  @override
+  String get resetSettingsConfirmAction => 'Сбросить';
+
+  @override
+  String get resetSettingsDone => 'Настройки сброшены до значений по умолчанию';
 }

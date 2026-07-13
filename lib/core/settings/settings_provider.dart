@@ -28,6 +28,8 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
     await _syncNative(next);
   }
 
+  Future<void> resetToDefaults() => updateSettings((_) => const AppSettings());
+
   Future<void> _syncNative(AppSettings settings) => ref
       .read(externalTouchpadApiProvider)
       .updateConfig(

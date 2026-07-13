@@ -12,6 +12,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appTitle => '外部ディスプレイ用タッチパッド';
 
   @override
+  String get appTitleShort => 'タッチパッド';
+
+  @override
   String get displayDisconnected => '外部ディスプレイの接続が切れました';
 
   @override
@@ -251,4 +254,22 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get openSourceLicensesDescription =>
       'このアプリで使用しているオープンソースソフトウェアのライセンス情報';
+
+  @override
+  String get resetSettingsButton => 'デフォルトに戻す';
+
+  @override
+  String get resetSettingsConfirmTitle => '設定をリセットしますか？';
+
+  @override
+  String get resetSettingsConfirmMessage => 'すべての設定が既定値に戻ります。';
+
+  @override
+  String get resetSettingsCancel => 'キャンセル';
+
+  @override
+  String get resetSettingsConfirmAction => 'リセット';
+
+  @override
+  String get resetSettingsDone => '設定を既定値にリセットしました';
 }

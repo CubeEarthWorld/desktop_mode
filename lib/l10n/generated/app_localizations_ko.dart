@@ -12,6 +12,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appTitle => '외부 디스플레이 터치패드';
 
   @override
+  String get appTitleShort => '터치패드';
+
+  @override
   String get displayDisconnected => '외부 디스플레이 연결이 끊어졌습니다';
 
   @override
@@ -250,4 +253,22 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get openSourceLicensesDescription => '이 앱에서 사용하는 오픈 소스 소프트웨어의 라이선스 정보';
+
+  @override
+  String get resetSettingsButton => '기본값으로 재설정';
+
+  @override
+  String get resetSettingsConfirmTitle => '설정을 재설정하시겠습니까?';
+
+  @override
+  String get resetSettingsConfirmMessage => '모든 설정이 기본값으로 복원됩니다.';
+
+  @override
+  String get resetSettingsCancel => '취소';
+
+  @override
+  String get resetSettingsConfirmAction => '재설정';
+
+  @override
+  String get resetSettingsDone => '설정이 기본값으로 재설정되었습니다';
 }

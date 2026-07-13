@@ -10,6 +10,7 @@ import '../../core/theme/app_dimens.dart';
 import '../../l10n/l10n.dart';
 import '../../models/session_state.dart';
 import '../settings/widgets/display_mode_picker.dart';
+import 'widgets/sliding_app_title.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -35,7 +36,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        title: SlidingAppTitle(l10n.appTitleShort),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),

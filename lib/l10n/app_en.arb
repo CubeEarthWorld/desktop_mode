@@ -4,6 +4,10 @@
   "@appTitle": {
     "description": "Application title shown in the task switcher"
   },
+  "appTitleShort": "Touchpad",
+  "@appTitleShort": {
+    "description": "Short app name shown on the home screen's app bar"
+  },
   "displayDisconnected": "External display disconnected",
   "@displayDisconnected": {
     "description": "Snackbar shown when the external display is unplugged"
@@ -116,5 +120,11 @@
   "unlockByLongPress": "Hold to unlock",
   "sectionAbout": "About",
   "openSourceLicenses": "Open-source licenses",
-  "openSourceLicensesDescription": "License notices for open-source software used in this app"
+  "openSourceLicensesDescription": "License notices for open-source software used in this app",
+  "resetSettingsButton": "Reset to defaults",
+  "resetSettingsConfirmTitle": "Reset settings?",
+  "resetSettingsConfirmMessage": "All settings will be restored to their default values.",
+  "resetSettingsCancel": "Cancel",
+  "resetSettingsConfirmAction": "Reset",
+  "resetSettingsDone": "Settings have been reset to defaults"
 }

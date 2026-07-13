@@ -1,6 +1,7 @@
 {
   "@@locale": "es",
   "appTitle": "Panel táctil para pantalla externa",
+  "appTitleShort": "Panel táctil",
   "displayDisconnected": "Se desconectó la pantalla externa",
   "sessionEndedUnexpectedly": "La sesión terminó de forma inesperada ({reason})",
   "settingsTooltip": "Ajustes",
@@ -75,5 +76,11 @@
   "unlockByLongPress": "Mantén pulsado para desbloquear",
   "sectionAbout": "Acerca de",
   "openSourceLicenses": "Licencias de código abierto",
-  "openSourceLicensesDescription": "Avisos de licencia del software de código abierto utilizado en esta aplicación"
+  "openSourceLicensesDescription": "Avisos de licencia del software de código abierto utilizado en esta aplicación",
+  "resetSettingsButton": "Restablecer valores predeterminados",
+  "resetSettingsConfirmTitle": "¿Restablecer los ajustes?",
+  "resetSettingsConfirmMessage": "Todos los ajustes volverán a sus valores predeterminados.",
+  "resetSettingsCancel": "Cancelar",
+  "resetSettingsConfirmAction": "Restablecer",
+  "resetSettingsDone": "Los ajustes se han restablecido a los valores predeterminados"
 }

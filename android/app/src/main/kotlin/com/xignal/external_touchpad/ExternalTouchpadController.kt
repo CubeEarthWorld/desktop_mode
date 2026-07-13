@@ -682,15 +682,15 @@ class ExternalTouchpadController private constructor(private val appContext: Con
     /**
      * `readConfigFromPrefs()` と同じ理由(Accessibility Service が Flutter エンジンより
      * 先に接続しうる)で、AppSettings JSON を直接読む。既定値は Flutter 側の
-     * `AppSettings.autoStart` の既定値(true)と揃える。
+     * `AppSettings.autoStart` の既定値(false)と揃える。
      */
     private fun readAutoStartFromPrefs(): Boolean {
         return try {
             val prefs = appContext.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val json = prefs.getString("flutter.external_touchpad.settings", null) ?: return true
-            JSONObject(json).optBoolean("autoStart", true)
+            val json = prefs.getString("flutter.external_touchpad.settings", null) ?: return false
+            JSONObject(json).optBoolean("autoStart", false)
         } catch (_: Throwable) {
-            true
+            false
         }
     }
 }

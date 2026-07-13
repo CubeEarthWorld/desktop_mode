@@ -12,6 +12,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appTitle => 'Touchpad für externes Display';
 
   @override
+  String get appTitleShort => 'Touchpad';
+
+  @override
   String get displayDisconnected => 'Verbindung zum externen Display getrennt';
 
   @override
@@ -261,4 +264,24 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get openSourceLicensesDescription =>
       'Lizenzhinweise für die in dieser App verwendete Open-Source-Software';
+
+  @override
+  String get resetSettingsButton => 'Auf Standard zurücksetzen';
+
+  @override
+  String get resetSettingsConfirmTitle => 'Einstellungen zurücksetzen?';
+
+  @override
+  String get resetSettingsConfirmMessage =>
+      'Alle Einstellungen werden auf die Standardwerte zurückgesetzt.';
+
+  @override
+  String get resetSettingsCancel => 'Abbrechen';
+
+  @override
+  String get resetSettingsConfirmAction => 'Zurücksetzen';
+
+  @override
+  String get resetSettingsDone =>
+      'Die Einstellungen wurden auf die Standardwerte zurückgesetzt';
 }

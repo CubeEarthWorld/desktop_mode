@@ -242,7 +242,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
                     accessibilityService ?: appContext,
                     display,
                     bounds,
-                    config.preferredDisplayModeId,
+                    displaySessionManager.validateModeId(display, config.preferredDisplayModeId),
                 )
                 cursorState?.let { overlayController.move(it.x, it.y) }
                 markCursorActivity()
@@ -310,7 +310,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
                 accessibilityService ?: appContext,
                 display,
                 bounds,
-                config.preferredDisplayModeId,
+                displaySessionManager.validateModeId(display, config.preferredDisplayModeId),
             )
             if (!shown) {
                 lastError = "overlay_failed: cursor overlay unavailable"
@@ -597,7 +597,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
                 accessibilityService ?: appContext,
                 display,
                 displaySessionManager.bounds(display),
-                preferredDisplayModeId,
+                displaySessionManager.validateModeId(display, preferredDisplayModeId),
             )
             overlayController.move(cursor.x, cursor.y)
             markCursorActivity()

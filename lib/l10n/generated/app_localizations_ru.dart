@@ -108,6 +108,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get pointerSpeedLabel => 'Скорость указателя';
 
   @override
+  String get dragSensitivityLabel => 'Чувствительность перетаскивания';
+
+  @override
   String get longPressDurationLabel =>
       'Время долгого нажатия/начала перетаскивания';
 

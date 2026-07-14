@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/navigation/route_observer.dart';
 import 'core/platform/external_touchpad_channel.dart';
 import 'core/theme/app_theme.dart';
 import 'features/diagnostics/diagnostics_screen.dart';
@@ -13,6 +14,7 @@ import 'models/external_touchpad_event.dart';
 
 final _router = GoRouter(
   initialLocation: '/',
+  observers: [routeObserver],
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(

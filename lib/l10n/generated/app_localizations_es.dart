@@ -108,6 +108,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pointerSpeedLabel => 'Velocidad del puntero';
 
   @override
+  String get dragSensitivityLabel => 'Sensibilidad de arrastre';
+
+  @override
   String get longPressDurationLabel =>
       'Tiempo de pulsación larga/inicio de arrastre';
 

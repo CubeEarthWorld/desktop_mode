@@ -282,6 +282,12 @@ abstract class AppLocalizations {
   /// **'Pointer speed'**
   String get pointerSpeedLabel;
 
+  /// No description provided for @dragSensitivityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag sensitivity'**
+  String get dragSensitivityLabel;
+
   /// No description provided for @longPressDurationLabel.
   ///
   /// In en, this message translates to:

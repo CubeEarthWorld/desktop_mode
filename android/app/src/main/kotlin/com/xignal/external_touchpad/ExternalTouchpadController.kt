@@ -303,7 +303,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         targetDisplay = display
         cursorState = CursorState(bounds)
         status = SessionStatus.ACTIVE
-        softKeyboardCoordinator.onSessionStarted(display.displayId)
+        softKeyboardCoordinator.onSessionStarted()
 
         if (config.showCursor) {
             val shown = overlayController.show(

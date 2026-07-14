@@ -103,6 +103,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pointerSpeedLabel => '포인터 속도';
 
   @override
+  String get dragSensitivityLabel => '드래그 감도';
+
+  @override
   String get longPressDurationLabel => '길게 누르기/드래그 시작 시간';
 
   @override

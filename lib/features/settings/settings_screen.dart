@@ -84,6 +84,21 @@ class SettingsScreen extends ConsumerWidget {
                   notifier.updateSettings((s) => s.copyWith(pointerSpeed: v)),
             ),
             _SliderRow(
+              label: l10n.dragSensitivityLabel,
+              value: settings.dragSensitivity.toDouble(),
+              min: AppSettings.dragSensitivityMin.toDouble(),
+              max: AppSettings.dragSensitivityMax.toDouble(),
+              divisions:
+                  AppSettings.dragSensitivityMax -
+                  AppSettings.dragSensitivityMin,
+              displayValue: settings.dragSensitivity > 0
+                  ? '+${settings.dragSensitivity}'
+                  : '${settings.dragSensitivity}',
+              onChanged: (v) => notifier.updateSettings(
+                (s) => s.copyWith(dragSensitivity: v.round()),
+              ),
+            ),
+            _SliderRow(
               label: l10n.longPressDurationLabel,
               value: settings.longPressDurationMs.toDouble(),
               min: AppSettings.longPressDurationMinMs.toDouble(),
@@ -334,6 +349,7 @@ class _SliderRow extends StatelessWidget {
     required this.max,
     required this.displayValue,
     required this.onChanged,
+    this.divisions,
   });
 
   final String label;
@@ -342,6 +358,7 @@ class _SliderRow extends StatelessWidget {
   final double max;
   final String displayValue;
   final ValueChanged<double> onChanged;
+  final int? divisions;
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +372,13 @@ class _SliderRow extends StatelessWidget {
             Text(displayValue, style: const TextStyle(color: AppColors.accent)),
           ],
         ),
-        Slider(value: value, min: min, max: max, onChanged: onChanged),
+        Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: divisions,
+          onChanged: onChanged,
+        ),
       ],
     );
   }

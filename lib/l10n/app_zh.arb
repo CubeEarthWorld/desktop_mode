@@ -29,6 +29,7 @@
   "touchGlowDescription": "仅在点击或长按被确认的瞬间显示",
   "sectionInput": "操作",
   "pointerSpeedLabel": "指针速度",
+  "dragSensitivityLabel": "拖动灵敏度",
   "longPressDurationLabel": "长按/拖动开始时间",
   "cursorIdleTimeoutLabel": "光标自动隐藏时间",
   "cursorIdleOff": "关闭",

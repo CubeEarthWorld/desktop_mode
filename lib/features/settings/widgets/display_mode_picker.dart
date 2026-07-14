@@ -36,6 +36,13 @@ class DisplayModePicker extends ConsumerWidget {
         final validSelection = modes.any((m) => m.modeId == selectedModeId)
             ? selectedModeId
             : null;
+        // 保存済みの modeId が現在の接続の一覧に無い場合、表示上だけ「既定」に
+        // フォールバックすると、無効な値が設定に残ったまま native 側へ渡り続け、
+        // 別の接続で偶然同じ番号が別の解像度を指したときに意図しない切り替えを
+        // 招く。検出した時点で設定側もクリアしておく。
+        if (snapshot.hasData && selectedModeId != null && validSelection == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => onChanged(null));
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,

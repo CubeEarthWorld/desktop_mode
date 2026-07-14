@@ -130,6 +130,20 @@ class DisplaySessionManager(private val appContext: Context) {
         }
     }
 
+    /**
+     * [modeId] が [display] の現在の `supportedModes` に含まれる場合だけそのまま返す。
+     *
+     * [Display.Mode.getModeId] は接続ごとに機器/OS が採番し直す ID であり、別の接続や
+     * 別の外部ディスプレイでも同じ番号が再利用されうる一方、指す解像度/リフレッシュレートの
+     * 保証は無い。以前の接続で保存した modeId を検証せずに適用すると、意図しない解像度へ
+     * 切り替わり、その後そのディスプレイで表示するアプリ(Chrome 含む)が標準と異なる
+     * 拡大率で描画される原因になる。
+     */
+    fun validateModeId(display: Display, modeId: Int?): Int? {
+        if (modeId == null) return null
+        return if (display.supportedModes.any { it.modeId == modeId }) modeId else null
+    }
+
     private fun windowMetricsBounds(display: Display): Rect {
         // currentWindowMetrics は「呼び出し元の現在のウィンドウ」の寸法を返すため、
         // ウィンドウを持たない createDisplayContext だけでは display 本来のサイズが取れず、

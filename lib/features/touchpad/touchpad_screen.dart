@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../core/navigation/route_observer.dart';
 import '../../core/platform/app_status_provider.dart';
 import '../../core/platform/external_touchpad_api.dart';
 import '../../core/platform/external_touchpad_channel.dart';
@@ -31,12 +32,17 @@ class TouchpadScreen extends ConsumerStatefulWidget {
   ConsumerState<TouchpadScreen> createState() => _TouchpadScreenState();
 }
 
-class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
+class _TouchpadScreenState extends ConsumerState<TouchpadScreen>
+    with RouteAware {
   Timer? _oledTimer;
   Offset _oledShift = Offset.zero;
   final _random = Random();
   late final ExternalTouchpadApi _api;
   bool _brightnessMinimized = false;
+  // 設定画面などに覆われている間は true 以外になる。ロックの自動カウントダウンや
+  // 輝度の最小化は、この画面が実際に見えている(操作対象になっている)間だけ有効にする。
+  bool _isTopRoute = true;
+  PageRoute<dynamic>? _observedRoute;
 
   @override
   void initState() {
@@ -57,8 +63,7 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
     );
     ref.listenManual<bool>(
       settingsProvider.select(
-        (settings) =>
-            settings.value?.minimizeBrightnessWhileLocked ?? false,
+        (settings) => settings.value?.minimizeBrightnessWhileLocked ?? false,
       ),
       (_, _) => _syncLockedBrightness(),
       fireImmediately: true,
@@ -66,11 +71,39 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic> && route != _observedRoute) {
+      if (_observedRoute != null) routeObserver.unsubscribe(this);
+      _observedRoute = route;
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     unawaited(WakelockPlus.disable());
     _oledTimer?.cancel();
     if (_brightnessMinimized) _setScreenBrightness(null);
     super.dispose();
+  }
+
+  /// 設定画面など、この画面を覆う別の画面が上に乗ったとき。
+  @override
+  void didPushNext() {
+    _isTopRoute = false;
+    _syncLockedBrightness();
+    ref.read(touchpadControllerProvider.notifier).pauseIdleLock();
+  }
+
+  /// 覆っていた画面が閉じられ、タッチパッド画面に戻ってきたとき。
+  @override
+  void didPopNext() {
+    _isTopRoute = true;
+    _syncLockedBrightness();
+    ref.read(touchpadControllerProvider.notifier).resumeIdleLock();
   }
 
   void _setOledProtectionEnabled(bool enabled) {
@@ -99,16 +132,14 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> {
     final minimizeWhileLocked =
         ref.read(settingsProvider).value?.minimizeBrightnessWhileLocked ??
         false;
-    final shouldMinimize = locked && minimizeWhileLocked;
+    final shouldMinimize = locked && minimizeWhileLocked && _isTopRoute;
     if (shouldMinimize == _brightnessMinimized) return;
     _brightnessMinimized = shouldMinimize;
     _setScreenBrightness(shouldMinimize ? 0 : null);
   }
 
   void _setScreenBrightness(double? brightness) {
-    unawaited(
-      _api.setScreenBrightness(brightness).catchError((Object _) {}),
-    );
+    unawaited(_api.setScreenBrightness(brightness).catchError((Object _) {}));
   }
 
   @override

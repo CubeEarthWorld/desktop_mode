@@ -102,6 +102,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pointerSpeedLabel => '指针速度';
 
   @override
+  String get dragSensitivityLabel => '拖动灵敏度';
+
+  @override
   String get longPressDurationLabel => '长按/拖动开始时间';
 
   @override

@@ -10,6 +10,7 @@ void main() {
         showCursor: false,
         showTouchGlow: false,
         pointerSpeed: 3.2,
+        dragSensitivity: -1,
         longPressDurationMs: 700,
         cursorIdleTimeoutMs: 5000,
         preferredDisplayId: 42,
@@ -29,6 +30,7 @@ void main() {
       expect(restored.showCursor, original.showCursor);
       expect(restored.showTouchGlow, original.showTouchGlow);
       expect(restored.pointerSpeed, original.pointerSpeed);
+      expect(restored.dragSensitivity, original.dragSensitivity);
       expect(restored.longPressDurationMs, original.longPressDurationMs);
       expect(restored.cursorIdleTimeoutMs, original.cursorIdleTimeoutMs);
       expect(restored.preferredDisplayId, original.preferredDisplayId);
@@ -52,6 +54,7 @@ void main() {
 
       expect(restored.autoStart, false);
       expect(restored.pointerSpeed, 1.8);
+      expect(restored.dragSensitivity, 0);
       expect(
         restored.longPressDurationMs,
         AppSettings.defaultLongPressDurationMs,
@@ -59,6 +62,21 @@ void main() {
       expect(restored.preferredDisplayId, isNull);
       expect(restored.touchLockIdleTimeoutSeconds, 30);
       expect(restored.minimizeBrightnessWhileLocked, false);
+    });
+
+    test('out-of-range dragSensitivity is clamped to -2..2', () {
+      expect(
+        AppSettings.fromJson(const {'dragSensitivity': 9}).dragSensitivity,
+        2,
+      );
+      expect(
+        AppSettings.fromJson(const {'dragSensitivity': -9}).dragSensitivity,
+        -2,
+      );
+    });
+
+    test('dragSensitivityMultiplier is 1.0 at the default (0) level', () {
+      expect(AppSettings.dragSensitivityMultiplier(0), 1.0);
     });
 
     test('invalid touch-lock timeout falls back to 30 seconds', () {

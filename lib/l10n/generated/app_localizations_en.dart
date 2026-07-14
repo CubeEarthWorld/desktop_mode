@@ -107,6 +107,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pointerSpeedLabel => 'Pointer speed';
 
   @override
+  String get dragSensitivityLabel => 'Drag sensitivity';
+
+  @override
   String get longPressDurationLabel => 'Long-press / drag start time';
 
   @override

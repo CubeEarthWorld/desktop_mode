@@ -29,6 +29,7 @@
   "touchGlowDescription": "Показывать только в момент подтверждения нажатия или долгого нажатия",
   "sectionInput": "Управление",
   "pointerSpeedLabel": "Скорость указателя",
+  "dragSensitivityLabel": "Чувствительность перетаскивания",
   "longPressDurationLabel": "Время долгого нажатия/начала перетаскивания",
   "cursorIdleTimeoutLabel": "Время автоскрытия курсора",
   "cursorIdleOff": "ВЫКЛ",

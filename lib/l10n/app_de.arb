@@ -29,6 +29,7 @@
   "touchGlowDescription": "Nur im Moment eines bestätigten Klicks oder langen Drückens anzeigen",
   "sectionInput": "Steuerung",
   "pointerSpeedLabel": "Zeigergeschwindigkeit",
+  "dragSensitivityLabel": "Ziehempfindlichkeit",
   "longPressDurationLabel": "Zeit für langes Drücken/Ziehbeginn",
   "cursorIdleTimeoutLabel": "Cursor automatisch ausblenden nach",
   "cursorIdleOff": "AUS",

@@ -5,6 +5,7 @@ class AppSettings {
     this.showCursor = true,
     this.showTouchGlow = true,
     this.pointerSpeed = 1.8,
+    this.dragSensitivity = 0,
     this.longPressDurationMs = defaultLongPressDurationMs,
     this.cursorIdleTimeoutMs = 3000,
     this.preferredDisplayId,
@@ -35,6 +36,10 @@ class AppSettings {
       showCursor: json['showCursor'] as bool? ?? true,
       showTouchGlow: json['showTouchGlow'] as bool? ?? true,
       pointerSpeed: (json['pointerSpeed'] as num?)?.toDouble() ?? 1.8,
+      dragSensitivity: ((json['dragSensitivity'] as num?)?.toInt() ?? 0).clamp(
+        dragSensitivityMin,
+        dragSensitivityMax,
+      ),
       longPressDurationMs: longPressDurationMs.clamp(
         longPressDurationMinMs,
         longPressDurationMaxMs,
@@ -57,6 +62,11 @@ class AppSettings {
   static const currentSchemaVersion = 5;
   static const pointerSpeedMin = 0.5;
   static const pointerSpeedMax = 4.0;
+  static const dragSensitivityMin = -2;
+  static const dragSensitivityMax = 2;
+
+  /// ドラッグ中だけに掛かる感度の倍率。0(既定)は 1.0 倍で他の操作と挙動を変えない。
+  static double dragSensitivityMultiplier(int level) => 1.0 + level * 0.25;
   static const longPressDurationMinMs = 400;
   static const longPressDurationMaxMs = 1500;
 
@@ -73,6 +83,7 @@ class AppSettings {
   final bool showCursor;
   final bool showTouchGlow;
   final double pointerSpeed;
+  final int dragSensitivity;
   final int longPressDurationMs;
   final int cursorIdleTimeoutMs;
   final int? preferredDisplayId;
@@ -90,6 +101,7 @@ class AppSettings {
     'showCursor': showCursor,
     'showTouchGlow': showTouchGlow,
     'pointerSpeed': pointerSpeed,
+    'dragSensitivity': dragSensitivity,
     'longPressDurationMs': longPressDurationMs,
     'cursorIdleTimeoutMs': cursorIdleTimeoutMs,
     'preferredDisplayId': preferredDisplayId,
@@ -108,6 +120,7 @@ class AppSettings {
     bool? showCursor,
     bool? showTouchGlow,
     double? pointerSpeed,
+    int? dragSensitivity,
     int? longPressDurationMs,
     int? cursorIdleTimeoutMs,
     int? preferredDisplayId,
@@ -127,6 +140,7 @@ class AppSettings {
     showCursor: showCursor ?? this.showCursor,
     showTouchGlow: showTouchGlow ?? this.showTouchGlow,
     pointerSpeed: pointerSpeed ?? this.pointerSpeed,
+    dragSensitivity: dragSensitivity ?? this.dragSensitivity,
     longPressDurationMs: longPressDurationMs ?? this.longPressDurationMs,
     cursorIdleTimeoutMs: cursorIdleTimeoutMs ?? this.cursorIdleTimeoutMs,
     preferredDisplayId: clearPreferredDisplayId

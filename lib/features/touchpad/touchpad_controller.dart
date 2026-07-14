@@ -83,6 +83,7 @@ class TouchpadController extends Notifier<TouchpadState> {
   final Map<int, Timer> _glowTimers = {};
   final Map<int, Offset> _touchPositions = {};
   Timer? _idleLockTimer;
+  bool _idleLockPaused = false;
   Timer? _unlockHoldTimer;
   Timer? _longPressTimer;
   int? _unlockHoldPointerId;
@@ -248,10 +249,13 @@ class TouchpadController extends Notifier<TouchpadState> {
                   _pendingContinuousKind != kind)) {
             _flushContinuousNow(_pendingContinuousId!);
           }
+          final multiplier = kind == ContinuousGestureKind.drag
+              ? AppSettings.dragSensitivityMultiplier(_settings.dragSensitivity)
+              : 1.0;
           _pendingContinuousId = sessionId;
           _pendingContinuousKind = kind;
-          _pendingContinuousDx += dx;
-          _pendingContinuousDy += dy;
+          _pendingContinuousDx += dx * multiplier;
+          _pendingContinuousDy += dy * multiplier;
           _scheduleFlush();
 
         case ContinuousGestureEndResult(
@@ -377,11 +381,28 @@ class TouchpadController extends Notifier<TouchpadState> {
 
   void _armIdleLockTimer() {
     _idleLockTimer?.cancel();
-    if (!_settings.touchLockEnabled) return;
+    if (_idleLockPaused || !_settings.touchLockEnabled) return;
     _idleLockTimer = Timer(
       Duration(seconds: _settings.touchLockIdleTimeoutSeconds),
       _lock,
     );
+  }
+
+  /// タッチパッド画面が設定画面などに覆われている間、ロックまでのカウントダウンを
+  /// 止める(タッチできない画面を見ている間に勝手にロックされるのを防ぐ)。覆われている
+  /// 間に設定を変更してもカウントダウンが再開しないよう、`_armIdleLockTimer` 自体を
+  /// 抑止するフラグとして持つ。
+  void pauseIdleLock() {
+    _idleLockPaused = true;
+    _idleLockTimer?.cancel();
+    _idleLockTimer = null;
+  }
+
+  /// タッチパッド画面に戻ったとき、カウントダウンを最初からやり直す。
+  void resumeIdleLock() {
+    _idleLockPaused = false;
+    if (state.locked) return;
+    _armIdleLockTimer();
   }
 
   /// タッチロック設定が ON のとき、ユーザーが明示的に今すぐロックするための入口。

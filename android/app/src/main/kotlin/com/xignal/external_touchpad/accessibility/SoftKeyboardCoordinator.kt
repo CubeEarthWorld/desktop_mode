@@ -48,7 +48,6 @@ class SoftKeyboardCoordinator(
 
     private var accessibilityService: AccessibilityService? = null
     private var externalSessionActive = false
-    private var targetDisplayId: Int? = null
     private var dismissedByTouchpad = false
     private var hasHardwareKeyboard = detectHardwareKeyboard()
 
@@ -67,16 +66,14 @@ class SoftKeyboardCoordinator(
         accessibilityService = null
     }
 
-    fun onSessionStarted(displayId: Int) {
+    fun onSessionStarted() {
         externalSessionActive = true
-        targetDisplayId = displayId
         dismissedByTouchpad = false
         applyShowMode()
     }
 
     fun onSessionStopped() {
         externalSessionActive = false
-        targetDisplayId = null
         dismissedByTouchpad = false
         applyShowMode()
     }
@@ -87,9 +84,13 @@ class SoftKeyboardCoordinator(
         applyShowMode()
     }
 
+    // `softKeyboardController.setShowMode` はディスプレイ単位ではなくシステム全体に
+    // 効くグローバル設定。そのため、外部ディスプレイ以外(本体側の検索欄など)で
+    // 編集可能な要素がフォーカスされた場合でも解除しないと、タッチパッド操作で
+    // 一度 HIDDEN にした後は本体側でテキスト欄をタップしてもソフトキーボードが
+    // 一切開かなくなってしまう。
     fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (event.eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED ||
-            event.displayId != targetDisplayId ||
             event.source?.let(::isEditableNode) != true
         ) {
             return

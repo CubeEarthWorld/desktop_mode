@@ -29,6 +29,7 @@
   "touchGlowDescription": "クリックまたは長押しが確定した瞬間だけ表示する",
   "sectionInput": "操作",
   "pointerSpeedLabel": "ポインター速度",
+  "dragSensitivityLabel": "ドラッグの感度",
   "longPressDurationLabel": "長押し/ドラッグ開始時間",
   "cursorIdleTimeoutLabel": "カーソル自動非表示時間",
   "cursorIdleOff": "OFF",

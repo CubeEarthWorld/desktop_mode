@@ -59,6 +59,7 @@
   "touchGlowDescription": "Show a brief effect only when a click or long press is committed",
   "sectionInput": "Input",
   "pointerSpeedLabel": "Pointer speed",
+  "dragSensitivityLabel": "Drag sensitivity",
   "longPressDurationLabel": "Long-press / drag start time",
   "cursorIdleTimeoutLabel": "Cursor auto-hide time",
   "cursorIdleOff": "OFF",

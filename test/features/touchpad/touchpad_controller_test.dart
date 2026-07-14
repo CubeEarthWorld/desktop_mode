@@ -332,6 +332,90 @@ void main() {
     setup.container.dispose();
   });
 
+  group('drag sensitivity', () {
+    testWidgets('default sensitivity does not change drag deltas', (
+      tester,
+    ) async {
+      final setup = _createContainer(
+        const AppSettings(longPressDurationMs: 1000),
+      );
+      final controller = await _initialize(tester, setup.container);
+
+      controller.handlePointerDown(1, Offset.zero, Duration.zero);
+      await tester.pump(const Duration(milliseconds: 1000));
+      controller.handlePointerMove(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1000),
+      );
+      controller.handlePointerUp(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1001),
+      );
+      await tester.pump();
+      await controller.debugPendingCommands;
+
+      expect(setup.api.inputCalls, hasLength(3));
+      expect(setup.api.inputCalls[0], startsWith('begin:'));
+      expect(setup.api.inputCalls[1], endsWith(':10.0,0.0'));
+      expect(setup.api.inputCalls[2], startsWith('end:'));
+      setup.container.dispose();
+    });
+
+    testWidgets('positive sensitivity scales up drag deltas', (tester) async {
+      final setup = _createContainer(
+        const AppSettings(longPressDurationMs: 1000, dragSensitivity: 2),
+      );
+      final controller = await _initialize(tester, setup.container);
+
+      controller.handlePointerDown(1, Offset.zero, Duration.zero);
+      await tester.pump(const Duration(milliseconds: 1000));
+      controller.handlePointerMove(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1000),
+      );
+      controller.handlePointerUp(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1001),
+      );
+      await tester.pump();
+      await controller.debugPendingCommands;
+
+      expect(setup.api.inputCalls, hasLength(3));
+      expect(setup.api.inputCalls[1], endsWith(':15.0,0.0'));
+      setup.container.dispose();
+    });
+
+    testWidgets('negative sensitivity scales down drag deltas', (tester) async {
+      final setup = _createContainer(
+        const AppSettings(longPressDurationMs: 1000, dragSensitivity: -2),
+      );
+      final controller = await _initialize(tester, setup.container);
+
+      controller.handlePointerDown(1, Offset.zero, Duration.zero);
+      await tester.pump(const Duration(milliseconds: 1000));
+      controller.handlePointerMove(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1000),
+      );
+      controller.handlePointerUp(
+        1,
+        const Offset(10, 0),
+        const Duration(milliseconds: 1001),
+      );
+      await tester.pump();
+      await controller.debugPendingCommands;
+
+      expect(setup.api.inputCalls, hasLength(3));
+      expect(setup.api.inputCalls[1], endsWith(':5.0,0.0'));
+      setup.container.dispose();
+    });
+  });
+
   group('lock', () {
     testWidgets('uses the configured 5-second idle timeout', (tester) async {
       final setup = _createContainer(
@@ -443,5 +527,30 @@ void main() {
       expect(setup.container.read(touchpadControllerProvider).locked, false);
       setup.container.dispose();
     });
+
+    testWidgets(
+      'pauseIdleLock stops the countdown until resumeIdleLock restarts it',
+      (tester) async {
+        final setup = _createContainer(
+          const AppSettings(
+            touchLockEnabled: true,
+            touchLockIdleTimeoutSeconds: 5,
+          ),
+        );
+        final controller = await _initialize(tester, setup.container);
+
+        controller.pauseIdleLock();
+        await tester.pump(const Duration(seconds: 10));
+        expect(setup.container.read(touchpadControllerProvider).locked, false);
+
+        controller.resumeIdleLock();
+        await tester.pump(const Duration(milliseconds: 4999));
+        expect(setup.container.read(touchpadControllerProvider).locked, false);
+
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(setup.container.read(touchpadControllerProvider).locked, true);
+        setup.container.dispose();
+      },
+    );
   });
 }

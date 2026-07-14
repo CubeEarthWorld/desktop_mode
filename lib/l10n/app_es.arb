@@ -29,6 +29,7 @@
   "touchGlowDescription": "Mostrar solo en el momento en que se confirma un clic o una pulsación larga",
   "sectionInput": "Control",
   "pointerSpeedLabel": "Velocidad del puntero",
+  "dragSensitivityLabel": "Sensibilidad de arrastre",
   "longPressDurationLabel": "Tiempo de pulsación larga/inicio de arrastre",
   "cursorIdleTimeoutLabel": "Tiempo de ocultación automática del cursor",
   "cursorIdleOff": "OFF",

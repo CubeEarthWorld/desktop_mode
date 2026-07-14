@@ -50,6 +50,21 @@ class _AppListSheetContentState extends ConsumerState<_AppListSheetContent> {
   String _query = '';
 
   @override
+  void initState() {
+    super.initState();
+    // タッチパッド操作でソフトキーボードがグローバルに隠されたままだと、この検索欄が
+    // オートフォーカスしてもキーボードが開かない(setShowMode はディスプレイ単位でなく
+    // システム全体に効くため)。フォーカスイベント頼みだと開かないことがあるので、
+    // ここで能動的に解除しておく。
+    unawaited(
+      ref
+          .read(externalTouchpadApiProvider)
+          .restoreSoftKeyboard()
+          .catchError((Object _) {}),
+    );
+  }
+
+  @override
   void dispose() {
     _searchFocusNode.dispose();
     super.dispose();

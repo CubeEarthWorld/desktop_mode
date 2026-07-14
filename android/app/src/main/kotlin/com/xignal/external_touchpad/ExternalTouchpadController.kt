@@ -363,6 +363,9 @@ class ExternalTouchpadController private constructor(private val appContext: Con
     /** タッチパッド上のソフトキーボード以外を触ったとき、現在の標準 IME を閉じる。 */
     fun dismissSoftKeyboard() = softKeyboardCoordinator.dismiss()
 
+    /** 本体側で文字入力が必要な UI(アプリ一覧の検索欄など)を開いたとき、隠した状態を解除する。 */
+    fun restoreSoftKeyboard() = softKeyboardCoordinator.restore()
+
     // ---- カーソルのアイドル非表示 ----
 
     private fun markCursorActivity() {

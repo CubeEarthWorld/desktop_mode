@@ -54,6 +54,11 @@ class ExternalTouchpadChannel(
                     result.success(null)
                 }
 
+                "restoreSoftKeyboard" -> {
+                    controller.restoreSoftKeyboard()
+                    result.success(null)
+                }
+
                 "moveCursor" -> {
                     val dx = (call.argument<Number>("dx") ?: 0).toFloat()
                     val dy = (call.argument<Number>("dy") ?: 0).toFloat()

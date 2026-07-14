@@ -69,6 +69,10 @@ class ExternalTouchpadChannel implements ExternalTouchpadApi {
       _method.invokeMethod('dismissSoftKeyboard');
 
   @override
+  Future<void> restoreSoftKeyboard() =>
+      _method.invokeMethod('restoreSoftKeyboard');
+
+  @override
   Future<void> moveCursor(double dx, double dy) =>
       _method.invokeMethod('moveCursor', {'dx': dx, 'dy': dy});
 

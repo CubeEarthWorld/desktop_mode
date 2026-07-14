@@ -43,15 +43,50 @@ class ExternalDisplayNavigator(
             return performHome(service, displayId, width, height)
         }
         if (action == "back") {
-            val method = activateNavigationBack(service, displayId, width, height)
-            if (method != null) {
-                Log.d(TAG, "action=back display=$displayId method=$method")
-                return true
-            }
+            return performBack(service, displayId, width, height)
         }
 
         val accepted = injectNavigationGesture(service, displayId, action, width, height)
         Log.d(TAG, "action=$action display=$displayId gestureAccepted=$accepted")
+        return accepted
+    }
+
+    /**
+     * 外部ディスプレイへ Back を届ける。3 ボタンナビゲーションバーの Back を
+     * タップできればそれを使うが、外部ディスプレイの多くはシステムデコレーション
+     * (ナビゲーションバー等)が既定で無効なため、ボタン自体が存在しないことが多い
+     * (Android のシステムデコレーション仕様上、セカンダリディスプレイは明示的に
+     * 有効化しない限りナビゲーションバーを含む装飾を一切表示しない)。
+     *
+     * さらに、エッジスワイプによるジェスチャーナビゲーション(ホームインジケーターからの
+     * 戻るスワイプ)はデフォルトディスプレイ専用の入力処理であり、セカンダリディスプレイには
+     * そもそも配線されていない。そのため座標ベースのスワイプを注入しても
+     * `dispatchGesture` 自体は成功する(=gestureAccepted=true)一方、OS はそれを
+     * 「戻る」だと解釈しない。
+     *
+     * ナビゲーションバーが見つからない場合は、代わりに `performGlobalAction
+     * (GLOBAL_ACTION_BACK)` を使う。これはディスプレイを問わず、現在入力フォーカスを
+     * 持つウィンドウ(直前までこのクラスが操作を注入していた外部ディスプレイの
+     * ウィンドウ)へ Back キーイベント相当を確実に届けられる、ディスプレイ非依存の
+     * システム API。
+     */
+    private fun performBack(
+        service: AccessibilityService,
+        displayId: Int,
+        width: Float,
+        height: Float,
+    ): Boolean {
+        val method = activateNavigationBack(service, displayId, width, height)
+        if (method != null) {
+            Log.d(TAG, "action=back display=$displayId method=$method")
+            return true
+        }
+        if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)) {
+            Log.d(TAG, "action=back display=$displayId method=global_action_back")
+            return true
+        }
+        val accepted = injectNavigationGesture(service, displayId, "back", width, height)
+        Log.d(TAG, "action=back display=$displayId fallbackGestureAccepted=$accepted")
         return accepted
     }
 

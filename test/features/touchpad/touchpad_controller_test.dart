@@ -37,6 +37,9 @@ class _FakeExternalTouchpadApi implements ExternalTouchpadApi {
   }
 
   @override
+  Future<void> restoreSoftKeyboard() async {}
+
+  @override
   Future<void> moveCursor(double dx, double dy) async =>
       inputCalls.add('cursor:$dx,$dy');
   @override

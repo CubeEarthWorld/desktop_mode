@@ -84,6 +84,19 @@ class SoftKeyboardCoordinator(
         applyShowMode()
     }
 
+    /**
+     * タッチパッド操作でグローバルに隠した状態を明示的に解除する。ローカル画面(本体側)で
+     * 文字入力が必要な UI を開くタイミングで Flutter から呼ばれる。`onAccessibilityEvent` の
+     * フォーカス検知は、フォーカスイベントが実際にこのサービスへ届くタイミングに依存する
+     * ため、UI 側で「これから入力が必要になる」と分かっている場合はここで能動的に解除した
+     * 方が確実(例: アプリ一覧の検索欄)。
+     */
+    fun restore() {
+        if (!dismissedByTouchpad) return
+        dismissedByTouchpad = false
+        applyShowMode()
+    }
+
     // `softKeyboardController.setShowMode` はディスプレイ単位ではなくシステム全体に
     // 効くグローバル設定。そのため、外部ディスプレイ以外(本体側の検索欄など)で
     // 編集可能な要素がフォーカスされた場合でも解除しないと、タッチパッド操作で

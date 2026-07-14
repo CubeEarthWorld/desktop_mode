@@ -28,6 +28,7 @@ class TouchpadState {
     this.fadingGlows = const [],
     this.locked = false,
     this.unlockHoldProgress = 0,
+    this.unlockAttemptActive = false,
     this.phase = TouchpadPhase.idle,
     this.gestureSessionId,
   });
@@ -35,6 +36,9 @@ class TouchpadState {
   final List<FadingGlow> fadingGlows;
   final bool locked;
   final double unlockHoldProgress;
+  // ロック解除ホールド中(指を置いてから離す/解除完了するまで)は true。
+  // この間は輝度最小化を解除し、進捗リングと錠アイコンをユーザーが確認できるようにする。
+  final bool unlockAttemptActive;
   final TouchpadPhase phase;
   final int? gestureSessionId;
 
@@ -42,6 +46,7 @@ class TouchpadState {
     List<FadingGlow>? fadingGlows,
     bool? locked,
     double? unlockHoldProgress,
+    bool? unlockAttemptActive,
     TouchpadPhase? phase,
     int? gestureSessionId,
     bool clearGestureSessionId = false,
@@ -49,6 +54,7 @@ class TouchpadState {
     fadingGlows: fadingGlows ?? this.fadingGlows,
     locked: locked ?? this.locked,
     unlockHoldProgress: unlockHoldProgress ?? this.unlockHoldProgress,
+    unlockAttemptActive: unlockAttemptActive ?? this.unlockAttemptActive,
     phase: phase ?? this.phase,
     gestureSessionId: clearGestureSessionId
         ? null
@@ -421,6 +427,7 @@ class TouchpadController extends Notifier<TouchpadState> {
       locked: true,
       fadingGlows: const [],
       unlockHoldProgress: 0,
+      unlockAttemptActive: false,
       phase: TouchpadPhase.idle,
       clearGestureSessionId: true,
     );
@@ -431,6 +438,7 @@ class TouchpadController extends Notifier<TouchpadState> {
     if (_unlockHoldPointerId != null) return;
     _unlockHoldPointerId = pointerId;
     _unlockHoldOrigin = position;
+    state = state.copyWith(unlockAttemptActive: true);
     var elapsedMs = 0;
     _unlockHoldTimer = Timer.periodic(const Duration(milliseconds: 40), (
       timer,
@@ -446,7 +454,11 @@ class TouchpadController extends Notifier<TouchpadState> {
         _unlockHoldTimer = null;
         _unlockHoldPointerId = null;
         _unlockHoldOrigin = null;
-        state = state.copyWith(locked: false, unlockHoldProgress: 0);
+        state = state.copyWith(
+          locked: false,
+          unlockHoldProgress: 0,
+          unlockAttemptActive: false,
+        );
         _armIdleLockTimer();
       }
     });
@@ -458,7 +470,7 @@ class TouchpadController extends Notifier<TouchpadState> {
     _unlockHoldTimer = null;
     _unlockHoldPointerId = null;
     _unlockHoldOrigin = null;
-    state = state.copyWith(unlockHoldProgress: 0);
+    state = state.copyWith(unlockHoldProgress: 0, unlockAttemptActive: false);
   }
 
   void _dispose() {

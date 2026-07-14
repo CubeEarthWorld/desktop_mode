@@ -32,6 +32,7 @@ abstract interface class ExternalTouchpadApi {
   Future<SessionState> startSession({int? displayId});
   Future<void> stopSession();
   Future<void> dismissSoftKeyboard();
+  Future<void> restoreSoftKeyboard();
 
   Future<void> moveCursor(double dx, double dy);
   Future<GestureAck> commitPointerAction(

@@ -61,6 +61,13 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen>
       (_, _) => _syncLockedBrightness(),
       fireImmediately: true,
     );
+    // 解除ホールド中(進捗リングを見せている間)は輝度最小化を一時的に解除し、
+    // 画面が真っ暗なまま解除操作を続けさせられる状態を防ぐ。
+    ref.listenManual<bool>(
+      touchpadControllerProvider.select((state) => state.unlockAttemptActive),
+      (_, _) => _syncLockedBrightness(),
+      fireImmediately: true,
+    );
     ref.listenManual<bool>(
       settingsProvider.select(
         (settings) => settings.value?.minimizeBrightnessWhileLocked ?? false,
@@ -106,6 +113,20 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen>
     ref.read(touchpadControllerProvider.notifier).resumeIdleLock();
   }
 
+  /// アプリ一覧を開いている間はロックのアイドルカウントダウンを止める(RouteObserver は
+  /// showModalBottomSheet の PopupRoute を PageRoute として検知しないため、didPushNext /
+  /// didPopNext 経由では捕捉できない。ここで明示的に一時停止/再開する)。
+  Future<void> _openAppList() async {
+    ref.read(touchpadControllerProvider.notifier).pauseIdleLock();
+    try {
+      await showAppListSheet(context);
+    } finally {
+      if (mounted) {
+        ref.read(touchpadControllerProvider.notifier).resumeIdleLock();
+      }
+    }
+  }
+
   void _setOledProtectionEnabled(bool enabled) {
     if (enabled && _oledTimer != null) return;
     _oledTimer?.cancel();
@@ -128,11 +149,16 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen>
   }
 
   void _syncLockedBrightness() {
-    final locked = ref.read(touchpadControllerProvider).locked;
+    final touchpadState = ref.read(touchpadControllerProvider);
+    final locked = touchpadState.locked;
     final minimizeWhileLocked =
         ref.read(settingsProvider).value?.minimizeBrightnessWhileLocked ??
         false;
-    final shouldMinimize = locked && minimizeWhileLocked && _isTopRoute;
+    final shouldMinimize =
+        locked &&
+        minimizeWhileLocked &&
+        _isTopRoute &&
+        !touchpadState.unlockAttemptActive;
     if (shouldMinimize == _brightnessMinimized) return;
     _brightnessMinimized = shouldMinimize;
     _setScreenBrightness(shouldMinimize ? 0 : null);
@@ -192,7 +218,7 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen>
                     enabled: accessibilityEnabled,
                     onBack: () => unawaited(_api.systemAction('back')),
                     onHome: () => unawaited(_api.systemAction('home')),
-                    onAppList: () => unawaited(showAppListSheet(context)),
+                    onAppList: () => unawaited(_openAppList()),
                   ),
                 ],
               ),

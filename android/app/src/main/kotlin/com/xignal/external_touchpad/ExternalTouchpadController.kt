@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -88,6 +89,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
     private var continuousInputKind: ContinuousGestureKind? = null
     private var continuousContactX: Float = 0f
     private var continuousContactY: Float = 0f
+    private var scrollBounds: Rect? = null
     private var lastContinuousInputId: Long = 0L
     private var flutterInputPhase: String = "idle"
     private var flutterInputSessionId: Long? = null
@@ -237,6 +239,12 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         if (display != null && display.displayId == displayId) {
             val bounds = displaySessionManager.bounds(display)
             cursorState?.updateBounds(bounds)
+            scrollBounds = try {
+                displaySessionManager.usableBounds(display)
+            } catch (e: Exception) {
+                Log.w(TAG, "Unable to update usable bounds on display change", e)
+                scrollBounds
+            }
             if (config.showCursor) {
                 overlayController.show(
                     accessibilityService ?: appContext,
@@ -353,6 +361,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
         gestureInjector.reset("session_stopped", releasePointer = true)
         continuousInputId = null
         continuousInputKind = null
+        scrollBounds = null
         appLauncher.clearPendingVerification()
         overlayController.hide()
         targetDisplay = null
@@ -476,6 +485,14 @@ class ExternalTouchpadController private constructor(private val appContext: Con
             continuousInputKind = kind
             continuousContactX = cursor.x
             continuousContactY = cursor.y
+            if (kind == ContinuousGestureKind.SCROLL) {
+                scrollBounds = try {
+                    displaySessionManager.usableBounds(display)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Unable to obtain usable bounds for scroll", e)
+                    null
+                }
+            }
             if (kind == ContinuousGestureKind.DRAG) {
                 overlayController.setDragging(true)
             }
@@ -502,7 +519,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
                 overlayController.move(cursor.x, cursor.y)
             }
             ContinuousGestureKind.SCROLL -> {
-                val bounds = displaySessionManager.usableBounds(display)
+                val bounds = scrollBounds ?: displaySessionManager.usableBounds(display)
                 continuousContactX = (continuousContactX + scaledDx).coerceIn(
                     bounds.left.toFloat(),
                     (bounds.right - 1).coerceAtLeast(bounds.left).toFloat(),
@@ -528,6 +545,7 @@ class ExternalTouchpadController private constructor(private val appContext: Con
             }
             continuousInputId = null
             continuousInputKind = null
+            scrollBounds = null
             lastContinuousInputId = maxOf(lastContinuousInputId, id)
         }
         gestureInjector.endContinuous(id, cancelled, onFinished)
